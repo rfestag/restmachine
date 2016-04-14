@@ -1,0 +1,9 @@
+require "restmachine/version"
+require 'webmachine'
+require 'restmachine/extensions/route'
+require 'restmachine/extensions/dispatcher'
+require 'restmachine/endpoint'
+require 'restmachine/controller'
+require 'restmachine/resource/authentication'
+require 'restmachine/resource/item'
+require 'restmachine/resource/collection'
