@@ -33,6 +33,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'mongoid'
   spec.add_development_dependency 'pry'
   spec.add_development_dependency 'webmachine-test'
+  spec.add_development_dependency 'reel'
   spec.add_dependency "webmachine", "~> 1.4"
   spec.add_dependency "jwt", "~> 1.5"
   spec.add_dependency "facets", "~> 3.0"

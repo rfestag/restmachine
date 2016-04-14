@@ -42,7 +42,6 @@ module Restmachine
       raise "multipart/form_data not supported yet"
     end
     def method_missing meth, *args
-      puts "looking for #{meth}"
       raise NoMethodError unless request.path_info[meth]
       request.path_info[meth]
     end

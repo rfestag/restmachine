@@ -1,4 +1,5 @@
 require 'restmachine'
+require 'celluloid/autostart'
 require 'mongoid'
 
 Mongoid.load!("mongoid.yml", :production)
@@ -9,6 +10,7 @@ end
 MyApp = Webmachine::Application.new do |app|
   app.configure do |config|
     config.port = 1234
+    config.adapter = :Reel
   end
   app.routes do
     resource Order
