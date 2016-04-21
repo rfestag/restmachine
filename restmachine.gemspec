@@ -42,4 +42,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "activesupport", "~> 4.2"
   spec.add_dependency "pundit", "~> 1.1"
   spec.add_dependency "mimemagic"
+  spec.add_dependency "thor"
 end
