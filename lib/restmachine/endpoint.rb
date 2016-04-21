@@ -1,30 +1,38 @@
+require 'mimemagic'
 require 'webmachine'
 require 'json'
 module Restmachine
   module Endpoint
-    attr_accessor :params
+    attr_reader :params
+    attr_accessor :errors
+    attr_accessor :current_user
 
+    def initialize
+      @errors = []
+    end
+    def default_format
+      [["application/json", :to_json],
+       ["text/html", :to_html]]
+    end
     def content_types_provided
-      [["application/json", :to_json]]
-    end
-    def content_types_accepted
-      [["application/json", :from_json],
-       ["application/x-www-form-url-encoded", :from_form],
-       ["multipart/form_data", :from_multipart]]
-    end
-    def is_authorized? authorization_header
-      if respond_to? :authenticate
-        authenticate authorization_header
+      @content_types_provided ||= if format = request.path_info[:format]
+        type = MimeMagic.by_extension(format).type
+        puts "type: #{type}"
+        [[type, "to_#{format}".to_sym]]
       else
-        true
+        default_format
       end
     end
-    def forbidden?
-      (respond_to? :authorized?) ? authorized? : false
+    def content_types_accepted
+      @content_types_accepted = [["application/json", :from_json],
+       ["application/x-www-form-url-encoded", :from_form],
+       ["multipart/form_data", :from_multipart]]
     end
     def from_json
       @params ||= JSON.parse(request.body.to_s)
       handle_request if respond_to? :handle_request
+    rescue JSON::ParserError => e
+      @errors << e.message
     end
     def from_form
       #Perhaps not ideal, but if a parameter is sent multiple times, we want
@@ -36,7 +44,9 @@ module Restmachine
           q[k] = v
         end
       end
+      @params
       handle_request if respond_to? :handle_request
+      #TODO: Rescue from parse error?
     end
     def from_multipart
       raise "multipart/form_data not supported yet"

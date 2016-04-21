@@ -1,20 +1,27 @@
-require 'active_support/inflector'
 module Restmachine
   module Controller
-    def path
-      @path ||= model.name.underscore
+    def list
+      policy_scope(model)
     end
-    def list **opts
-      self.class.model.all
-    end
-    def create
-      self.class.model.create(params)
+    def create id
+      obj = model.new(params)
+      obj.id = id
+      if obj.respond_to? :valid? and obj.valid?
+        obj.save!
+      else
+        errors = errors << obj.errors.full_messages
+      end
     end
     def find
-      self.class.model.find(id)
+      model.find(id)
     end
     def update
-      resource.update_attributes(params)
+      obj = resource
+      if obj.respond_to? :valid? and obj.valid?
+        resource.update_attributes!(params)
+      else
+        errors = errors << obj.errors.full_messages
+      end
     end
     def delete
       resource.destroy

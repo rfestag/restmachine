@@ -2,41 +2,62 @@ require 'json'
 module Restmachine
   module Resource
     module Item 
-      def create model, controller: Controller, authenticator: nil
-        Class.new(Webmachine::Resource) do
-          include Endpoint
-          include Item
-          include controller
-          include authenticator if authenticator
-          @model = model
-          def self.model
-            @model
+      def create *args
+        Class.new(Default.create(*args)) do
+          def allowed_methods
+            %w(GET PUT DELETE)
           end
-          def model
-            self.class.model
+          def resource
+            #We do it this way for cases where a resource
+            #doesn't exist, or we aren't allowed to access
+            #it.
+            return @resource if @lookup_done
+            @resource = find
+            authorize @resource, :show? if @resource
+          rescue Pundit::NotAuthorizedError => e
+            @resource = nil
+          ensure
+            @lookup_done = true
+          end
+          def handle_request
+            if request.put?
+              if resource_exists?
+                authorize resource, :update?
+                update
+              else
+                authorize model, :create?
+                create
+                201
+              end
+            end
+          rescue Pundit::NotAuthorizedError => e
+            unauthorized e.message
+          end
+          def to_json
+            if errors.empty?
+              resource.to_json
+            else
+              response.body = {errors: errors}.to_json
+            end
+          end
+          def to_html
+            @resource = resource
+            @errors = errors
+            render
+          end
+          def resource_exists?
+            resource
+          end
+          def delete_resource
+            authorize resource, :delete?
+            delete
+            true
+          rescue Pundit::NotAuthorizedError => e
+            unauthorized e.message
           end
         end
       end
       module_function :create
-
-      def allowed_methods
-        %w(GET PUT DELETE)
-      end
-      def resource
-        @resource ||= find
-      end
-      def handle_request
-        update if request.put?
-      end
-      def to_json
-        resource.to_json
-      end
-      def resource_exists?
-        resource
-      end
-      def delete_resource
-        delete
-      end
     end
   end
 end

@@ -1,3 +1,4 @@
+require 'uri'
 module Restmachine
   module Extensions
     module Route
@@ -9,6 +10,40 @@ module Restmachine
           path_spec = path_spec.reject {|c| c.blank?}
         end
         super path_spec, *args
+      end
+      def bind(tokens, bindings)
+        depth = 0
+        spec = @path_spec
+        loop do
+          case
+          when spec.empty? && tokens.empty?
+            return depth
+          when spec == [Webmachine::Dispatcher::Route::MATCH_ALL_STR]
+            return [depth, tokens]
+          when spec == [Webmachine::Dispatcher::Route::MATCH_ALL]
+            return [depth, tokens]
+          when tokens.empty?
+            return false
+          when Symbol === spec.first
+            bindings[spec.first] = URI.decode(tokens.first)
+          when spec.first == tokens.first
+          else
+            if spec.length == 1 and tokens.length == 1
+              elements = tokens.first.split('.')
+              if elements.length > 1
+                format = elements.pop
+                if spec.first == elements.join
+                  bindings[:format] = URI.decode(format)
+                  return depth + 1
+                end
+              end
+            end
+            return false
+          end
+          spec = spec[1..-1]
+          tokens = tokens[1..-1]
+          depth += 1
+        end
       end
     end
   end

@@ -1,10 +1,12 @@
+require 'active_support/inflector'
 module Restmachine
   module Extensions
     module Dispatcher
-      def resource model, *args, &block
-        path = "/#{model.name.underscore}"
-        collection = Restmachine::Resource::Collection.create(model)
-        item = Restmachine::Resource::Item.create(model)
+      def resource model, *args, path: nil, controller: nil, authenticator: nil, &block
+        path ||= "/#{model.name.pluralize.underscore}"
+        opts = {path: path, controller: controller, authenticator: authenticator}
+        collection = Restmachine::Resource::Collection.create(model, opts) 
+        item = Restmachine::Resource::Item.create(model, opts)
         add path, collection, *args, &block 
         add "#{path}/:id", item, *args, &block
       end
