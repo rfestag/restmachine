@@ -33,7 +33,7 @@ module Restmachine
               if elements.length > 1
                 format = elements.pop
                 if spec.first == elements.join
-                  bindings[:format] = URI.decode(format)
+                  bindings[:_request_format_ext] = URI.decode(format)
                   return depth + 1
                 end
               end

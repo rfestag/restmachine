@@ -1,5 +1,6 @@
 require 'webmachine/test'
 require 'spec_helper'
+Object.send :remove_const, :Rails
 require 'mongoid'
 
 Mongoid.load!("mongoid.yml", :production)

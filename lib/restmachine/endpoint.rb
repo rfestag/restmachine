@@ -1,8 +1,17 @@
 require 'mimemagic'
 require 'webmachine'
 require 'json'
+require 'pundit'
 module Restmachine
   module Endpoint
+    def self.included klass
+      klass.class_eval do
+        include Pundit
+        include Webmachine::ActionView::Resource
+        include Webmachine::Resource::Authentication
+      end
+    end
+
     attr_reader :params
     attr_accessor :errors
     attr_accessor :current_user
@@ -15,7 +24,7 @@ module Restmachine
        ["text/html", :to_html]]
     end
     def content_types_provided
-      @content_types_provided ||= if format = request.path_info[:format]
+      @content_types_provided ||= if format = request.path_info[:_request_format_ext]
         type = MimeMagic.by_extension(format).type
         puts "type: #{type}"
         [[type, "to_#{format}".to_sym]]
@@ -50,6 +59,10 @@ module Restmachine
     end
     def from_multipart
       raise "multipart/form_data not supported yet"
+    end
+    def unauthorized
+      #TOO:Allow user to set body
+      403
     end
     def method_missing meth, *args
       raise NoMethodError unless request.path_info[meth]

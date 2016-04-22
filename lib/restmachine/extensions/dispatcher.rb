@@ -10,6 +10,9 @@ module Restmachine
         add path, collection, *args, &block 
         add "#{path}/:id", item, *args, &block
       end
+      def login authenticator, *args, path: nil
+       
+      end
     end
   end
 end
