@@ -9,7 +9,9 @@ module Restmachine
                              authenticator: nil
         Class.new(self) do
           include (controller || Controller)
-          include authenticator if authenticator
+          define_method :authenticator do
+            authenticator
+          end
           define_method :path do
             path
           end

@@ -7,8 +7,8 @@ module Restmachine
         opts = {path: path, controller: controller, authenticator: authenticator}
         collection = Restmachine::Resource::Collection.create(model, opts) 
         item = Restmachine::Resource::Item.create(model, opts)
-        add path, collection, *args, &block 
-        add "#{path}/:id", item, *args, &block
+        add "#{path}.?:format?", collection, *args, &block 
+        add "#{path}/:id.?:format?", item, *args, &block
       end
       def login authenticator, *args, path: nil
        

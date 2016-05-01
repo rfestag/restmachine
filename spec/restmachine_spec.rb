@@ -67,6 +67,7 @@ describe Restmachine do
       post '/orders'
       expect(response.code).to eq(201)
       location = response.headers['Location']
+      puts "Getting #{location}"
       get location
       expect(response.code).to eq(200)
       expect(response.headers['Content-Type']).to eq('application/json')

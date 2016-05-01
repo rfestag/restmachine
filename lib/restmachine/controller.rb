@@ -12,7 +12,7 @@ module Restmachine
         errors = errors << obj.errors.full_messages
       end
     end
-    def find
+    def show
       model.find(id)
     end
     def update

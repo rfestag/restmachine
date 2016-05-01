@@ -35,13 +35,8 @@ module Restmachine
           raise InvalidCredentialError.new "Secret was not a valid type"
         end
       end
-      def login params
-        payload = yield params
-        if payload
-          JWT.encode payload, @secret, *@arguments
-        else
-          nil
-        end
+      def login payload
+        JWT.encode payload, @secret, *@arguments
       end
       def authenticate token
         if token

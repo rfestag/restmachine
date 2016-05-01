@@ -1,0 +1,23 @@
+grammar RestmachinePath
+  rule path
+    path_sep path_component (path)* <Path>
+  end
+  rule path_component
+    ((symbol / string) optional?)+ <Component>
+  end
+  rule symbol
+    ':' symbol_name / '{' symbol_name '}'
+  end
+  rule symbol_name
+    [a-zA-Z0-9_]+ <SymbolComponent>
+  end
+  rule string
+    [^/:?{}]+ <StringComponent>
+  end
+  rule optional
+    '?' <OptionalComponent>
+  end
+  rule path_sep
+    '/'
+  end
+end

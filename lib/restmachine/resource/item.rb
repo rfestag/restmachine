@@ -3,33 +3,60 @@ module Restmachine
   module Resource
     class Item < Model
       def allowed_methods
-        %w(GET PUT DELETE)
+        %w(GET PUT POST DELETE)
+      end
+      def allow_missing_put?
+        true
+      end
+      def is_conflict?
+        if request.put? and resource.nil?
+          !allow_missing_put?
+        else
+          false
+        end
+      end
+      def forbidden?
+        if resource
+          if request.get?
+            authorize resource, :show?
+          elsif request.put?
+            authorize resource, :update?
+            @action = :update
+          elsif request.delete?
+            authorize resource, :delete?
+          elsif request.post?
+            authorize resource, "#{action}?".to_sym
+          end
+        elsif allow_missing_put? and request.put?
+          authorize model, :create?
+          @action = :create
+        end
+        false
+      rescue Pundit::NotAuthorizedError => e
+        puts e.inspect
+        unauthorized(e)
       end
       def resource
         #We do it this way for cases where a resource
-        #doesn't exist, or we aren't allowed to access
-        #it.
+        #doesn't exist. We don't want to look up more than once
         return @resource if @lookup_done
-        @resource = find
-        authorize @resource, :show? if @resource
-      rescue Pundit::NotAuthorizedError => e
-        @resource = nil
-      ensure
+        @resource = show
         @lookup_done = true
+        @resource
       end
       def handle_request
-        if request.put?
-          if resource_exists?
-            authorize resource, :update?
-            update
-          else
-            authorize model, :create?
-            create
-            201
-          end
+        case @action
+        when :update
+          update
+        when :create
+          create
+          201
         end
-      rescue Pundit::NotAuthorizedError => e
-        unauthorized e.message
+      end
+      def process_post
+        result = resource.send action.to_sym
+        #TODO: format body as requested
+        #TODO: set headers
       end
       def to_json
         if errors.empty?
@@ -47,11 +74,8 @@ module Restmachine
         resource
       end
       def delete_resource
-        authorize resource, :delete?
         delete
         true
-      rescue Pundit::NotAuthorizedError => e
-        unauthorized e.message
       end
     end
   end

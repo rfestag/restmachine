@@ -4,24 +4,25 @@ require 'json'
 module Restmachine
   module Resource
     class Collection < Model
-      def initialize *args
-      end
       def allowed_methods
         %w(GET POST)
       end
       def create_path
         "#{path}/#{next_id}"
       end
+      def forbidden?
+        if post_is_create? and request.post?
+          authorize model, :create?
+        end
+        false
+      rescue Pundit::NotAuthorizedError => e
+        unauthorized(e)
+      end
       def post_is_create?
         true
       end
       def handle_request
-        if post_is_create? and request.post?
-          authorize model, :create?
-          create @next_id
-        end
-      rescue Pundit::NotAuthorizedError => e
-        unauthorized e.message
+        create @next_id if post_is_create? and request.post?
       end
       def to_json
         list.to_json
