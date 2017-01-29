@@ -12,6 +12,11 @@ module Restmachine
           define_method :authenticator do
             authenticator
           end
+          if authenticator
+            define_method :authenticate do |header,request|
+              authenticator.validate_session(header,request)
+            end
+          end
           define_method :path do
             path
           end

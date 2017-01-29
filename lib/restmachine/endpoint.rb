@@ -1,3 +1,5 @@
+require 'seconds'
+require 'securerandom'
 require 'mimemagic'
 require 'webmachine'
 require 'json'
@@ -7,17 +9,42 @@ module Restmachine
     def self.included klass
       klass.class_eval do
         include Pundit
+        include Webmachine::Decision::Conneg
         include Webmachine::ActionView::Resource
         include Webmachine::Resource::Authentication
       end
     end
 
-    attr_reader :params
+    attr_reader :params, :xsrf_token
     attr_accessor :errors
     attr_accessor :current_user
 
     def initialize
+      @xsrf_token = request.cookies['XSRF-TOKEN'] || SecureRandom.hex(32)
+      response.set_cookie 'XSRF-TOKEN', @xsrf_token, secure: true, expires: Time.now + 24.hours unless request.cookies['XSRF-TOKEN']
       @errors = []
+    end
+    def credential_to_user credential 
+      credential
+    end
+    def allow_null_sessions
+      true
+    end
+    def generate_post_response 
+      types = content_types_provided.map {|pair| pair.first }
+      content_type = choose_media_type(types, request.accept)
+      handler = content_types_provided.find{|ct, _| content_type.type_matches?(Webmachine::MediaType.parse(ct)) }.last
+      [content_type, send(handler)]
+    end
+    def is_authorized? header
+      if respond_to? :authenticate
+        valid_session = authenticate(header, request) do |credential|
+          @current_user = credential_to_user(credential)
+        end
+        valid_session || allow_null_sessions
+      else
+        true
+      end
     end
     def default_format
       [["application/json", :to_json],
@@ -36,6 +63,9 @@ module Restmachine
       @content_types_accepted = [["application/json", :from_json],
        ["application/x-www-form-url-encoded", :from_form],
        ["multipart/form_data", :from_multipart]]
+    end
+    def xsrf_valid?
+      request.cookies['XSRF-TOKEN'] == request.headers['X-XSRF-TOKEN']
     end
     def from_json
       @params ||= JSON.parse(request.body.to_s)

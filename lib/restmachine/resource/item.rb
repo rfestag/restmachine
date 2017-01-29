@@ -3,7 +3,7 @@ module Restmachine
   module Resource
     class Item < Model
       def allowed_methods
-        %w(GET PUT POST DELETE)
+        %w(GET PUT DELETE)
       end
       def allow_missing_put?
         true
@@ -20,15 +20,13 @@ module Restmachine
           if request.get?
             authorize resource, :show?
           elsif request.put?
-            authorize resource, :update?
+            authorize resource, :update? and xsrf_valid?
             @action = :update
           elsif request.delete?
-            authorize resource, :delete?
-          elsif request.post?
-            authorize resource, "#{action}?".to_sym
+            authorize resource, :delete? and xsrf_valid?
           end
         elsif allow_missing_put? and request.put?
-          authorize model, :create?
+          authorize model, :create? and xsrf_valid?
           @action = :create
         end
         false
@@ -53,16 +51,11 @@ module Restmachine
           201
         end
       end
-      def process_post
-        result = resource.send action.to_sym
-        #TODO: format body as requested
-        #TODO: set headers
-      end
       def to_json
         if errors.empty?
           resource.to_json
         else
-          response.body = {errors: errors}.to_json
+          {errors: errors}.to_json
         end
       end
       def to_html

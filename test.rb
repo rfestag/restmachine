@@ -1,6 +1,6 @@
+require 'mongoid'
 require 'restmachine'
 require 'celluloid/autostart'
-require 'mongoid'
 
 Mongoid.load!("mongoid.yml", :production)
 

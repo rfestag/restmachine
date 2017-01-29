@@ -10,8 +10,15 @@ module Restmachine
         add "#{path}.?:format?", collection, *args, &block 
         add "#{path}/:id.?:format?", item, *args, &block
       end
-      def login authenticator, *args, path: nil
-       
+      def login authenticator, *args, path: nil, controller: nil, &block
+        path ||= "/login"
+        opts = {path: path, authenticator: authenticator, controller: controller}
+        add path, Restmachine::Session::Login.create(opts), *args, &block
+      end
+      def logout authenticator, *args, path: nil, controller: nil, &block
+        path ||= "/logout"
+        opts = {path: path, authenticator: authenticator, controller: controller}
+        add path, Restmachine::Session::Login.create(opts), *args, &block
       end
     end
   end

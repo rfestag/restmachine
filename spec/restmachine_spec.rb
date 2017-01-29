@@ -1,7 +1,6 @@
+require 'mongoid'
 require 'webmachine/test'
 require 'spec_helper'
-Object.send :remove_const, :Rails
-require 'mongoid'
 
 Mongoid.load!("mongoid.yml", :production)
 
@@ -14,13 +13,19 @@ class Order
   include Mongoid::Document
   field :name
 end
+class Authenticator
+  def login
+    puts "Login called"
+    {name: 'Guest'}
+  end
+end
 
 MyApp = Webmachine::Application.new do |app|
   key = OpenSSL::PKey::EC.new 'prime256v1'
   key.generate_key
 
   app.routes do
-    #add "/login", Restmachine::Resource::Login.create(secret: key, algorithm: 'HS256')
+    login Restmachine::Authenticator::JWTCookie, controller: Authenticator
     resource Order
   end
 end
@@ -38,6 +43,16 @@ describe Restmachine do
     expect(Restmachine::VERSION).not_to be nil
   end
 
+  describe 'Log in' do
+    it 'should redirect to application root' do
+      header 'Accept', 'application/json'
+      post '/login'
+      expect(response.code).to eq(303)
+      expect(response.headers['Location']).to eq('/')
+      #expect(response.headers['Content-Type']).to eq('application/json')
+      #expect(response.body).to eq('{name: Guest}')
+    end
+  end
   describe 'GET /orders' do
     it 'returns an empty json array' do
       header 'Accept', 'application/json'
@@ -67,7 +82,6 @@ describe Restmachine do
       post '/orders'
       expect(response.code).to eq(201)
       location = response.headers['Location']
-      puts "Getting #{location}"
       get location
       expect(response.code).to eq(200)
       expect(response.headers['Content-Type']).to eq('application/json')

@@ -1,52 +1,89 @@
+require 'base64'
+require 'seconds'
 require 'jwt'
 module Restmachine
   module Authenticator
     class InvalidAlgorithmError < StandardError; end
     class InvalidCredentialError < StandardError; end
+
     class JWT
-      def initialize algorithm: 'none', secret: nil
-        if secret.nil? and algorithm == 'none'
-          @secret = secret
-          @arguments = (algorithm == 'none') ? [false] :
-                                               [true, {algorithm: algorithm}] 
+      TOKEN_HEADER = /^Bearer (.*)$/i.freeze
+      attr_reader :issuer
+
+      def initialize algorithm: 'ES384', secret: nil, issuer: nil, trusted_issuers: {}
+        @issuer = issuer
+        @secret = secret
+        @issuers = trusted_issuers
+        if @secret.nil? and algorithm == 'none'
+          @arguments = [false]
           return
-        elsif @secret.is_a? String
-          case algorithm
-          when /RS\d{3}/
-            #TODO: parse contents of @secret (file)
-          when /ED\d{3}/
-            #TODO: parse contents of @secret (file)
-          when /HS\d{3}/
-            @secret = secret
-            @public = secret
-            return
-          else
-            raise InvalidAlgorithmError.new 'Algorithm not recognized'
-          end
+        else
+          @arguments = [true, {algorithm: algorithm}]
         end
 
-        case @secret.class
-        when OpenSSL::PKey::EC
+        case algorithm
+        when /RS\d{3}/
+          case @secret
+          when String
+            #TODO: parse contents of @secret (file)
+          when nil
+            @secret = OpenSSL::PKey::RSA.generate 2048
+            @issuer = SecureRandom.hex 32
+          end
+          raise InvalidCredentialError.new "Secret was not a valid type for #{algorithm}: #{@secret.class}" unless @secret.is_a? OpenSSL::PKey::RSA
+          @public = @secret.public_key
+        when /ES\d{3}/
+          case @secret
+          when String
+            #TODO: parse contents of @secret (file)
+          when nil
+            @secret = OpenSSL::PKey::EC.new "prime#{$1}v1"
+            @secret.generate_key
+            @issuer = SecureRandom.hex 32
+          end
+          raise InvalidCredentialError.new "Secret was not a valid type for #{algorithm}: #{@secret.class}" unless @secret.is_a? OpenSSL::PKey::EC
           @public = OpenSSL::PKey::EC.new @secret
           @public.private_key = nil
-        when OpenSSL::PKey::RSA
-          @public = @secret.public_key
+        when /HS\d{3}/
+          secret ||= SecureRandom.hex 32
+          @secret = secret
+          raise InvalidCredentialError.new "Secret was not a valid type for #{algorithm}: #{@secret.class}" unless @secret.is_a? String
+          @public = secret
+          @issuer = SecureRandom.hex 32
         else
-          raise InvalidCredentialError.new "Secret was not a valid type"
+          raise InvalidAlgorithmError.new 'Algorithm not recognized'
         end
+        @issuers[@issuer] = @public
       end
-      def login payload
-        JWT.encode payload, @secret, *@arguments
+      def encode_token credentials
+        credentials[:iss] = @issuer
+        JWT.encode(credentials, @secret, *@arguments)
       end
-      def authenticate token
+      def decode_token token, issuer: nil
         if token
           begin
-            yield JWT.decode t, @secret, *@arguments
+            pub = (issuer)? @issuers[issuer] : @public
+            return (pub)? JWT.decode(token, pub, *@arguments) : nil
           rescue JWT::VerificationError => e
-            false
+            return nil
+          end 
+        else
+          return nil 
+        end
+      end
+      def validate_session header, request
+        token = get_token header, request
+        if token
+          issuer = (@issuers.length == 1) ? @issuer : JSON.parse(Base64.decode64(token.split('.').first))['iss']
+          credentials = decode_token token, issuer: issuer
+          if credentials
+            yield credentials if block_given?
+            return true
+          else 
+            return false
           end
         else
-          false
+          return false
         end
       end
     end
