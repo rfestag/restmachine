@@ -13,9 +13,8 @@ class Order
   include Mongoid::Document
   field :name
 end
-class Authenticator
+module LoginController
   def login
-    puts "Login called"
     {name: 'Guest'}
   end
 end
@@ -23,9 +22,10 @@ end
 MyApp = Webmachine::Application.new do |app|
   key = OpenSSL::PKey::EC.new 'prime256v1'
   key.generate_key
+  authenticator = Restmachine::Authenticator::JWTCookie.new secret: key
 
   app.routes do
-    login Restmachine::Authenticator::JWTCookie, controller: Authenticator
+    login authenticator, controller: LoginController
     resource Order
   end
 end
@@ -44,13 +44,13 @@ describe Restmachine do
   end
 
   describe 'Log in' do
-    it 'should redirect to application root' do
+    it 'should provide json of user' do
       header 'Accept', 'application/json'
-      post '/login'
-      expect(response.code).to eq(303)
-      expect(response.headers['Location']).to eq('/')
-      #expect(response.headers['Content-Type']).to eq('application/json')
-      #expect(response.body).to eq('{name: Guest}')
+      header 'Content-Type', 'application/x-www-form-url-encoded'
+      post '/login', {valid_credentials: true}
+      expect(response.code).to eq(200)
+      expect(response.headers['Content-Type']).to eq('application/json')
+      expect(response.body).to eq({name: "Guest"}.to_json)
     end
   end
   describe 'GET /orders' do

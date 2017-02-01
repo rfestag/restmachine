@@ -10,15 +10,16 @@ module Restmachine
       TOKEN_HEADER = /^Bearer (.*)$/i.freeze
       attr_reader :issuer
 
-      def initialize algorithm: 'ES384', secret: nil, issuer: nil, trusted_issuers: {}
+      def initialize algorithm: 'ES256', secret: nil, issuer: nil, trusted_issuers: {}
         @issuer = issuer
         @secret = secret
         @issuers = trusted_issuers
         if @secret.nil? and algorithm == 'none'
-          @arguments = [false]
+          @validate = false
           return
         else
-          @arguments = [true, {algorithm: algorithm}]
+          @validate = true
+          @algorithm = algorithm
         end
 
         case algorithm
@@ -57,14 +58,18 @@ module Restmachine
       end
       def encode_token credentials
         credentials[:iss] = @issuer
-        JWT.encode(credentials, @secret, *@arguments)
+        ::JWT.encode(credentials, @secret, @algorithm)
       end
       def decode_token token, issuer: nil
         if token
           begin
             pub = (issuer)? @issuers[issuer] : @public
-            return (pub)? JWT.decode(token, pub, *@arguments) : nil
-          rescue JWT::VerificationError => e
+            if @algorithm == 'none'
+              return ::JWT.decode(token, nil, false)
+            else
+              return (pub)? ::JWT.decode(token, pub, @validate, {algorithm: @algorithm}) : nil
+            end
+          rescue ::JWT::VerificationError => e
             return nil
           end 
         else

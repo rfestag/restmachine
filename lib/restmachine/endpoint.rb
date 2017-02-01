@@ -20,9 +20,20 @@ module Restmachine
     attr_accessor :current_user
 
     def initialize
-      @xsrf_token = request.cookies['XSRF-TOKEN'] || SecureRandom.hex(32)
-      response.set_cookie 'XSRF-TOKEN', @xsrf_token, secure: true, expires: Time.now + 24.hours unless request.cookies['XSRF-TOKEN']
+      if xsrf_enabled
+        @xsrf_token = request.cookies['XSRF-TOKEN'] || SecureRandom.hex(32)
+        response.set_cookie 'XSRF-TOKEN', @xsrf_token, secure: true, expires: xsrf_expiration unless request.cookies['XSRF-TOKEN']
+      end
       @errors = []
+    end
+    def xsrf_enabled
+      true
+    end
+    def xsrf_expiration
+      @xsrf_expiration ||= Time.now + xsrf_ttl
+    end
+    def xsrf_ttl
+      @xsrf_ttl ||= 24.hours
     end
     def credential_to_user credential 
       credential
@@ -93,6 +104,10 @@ module Restmachine
     def unauthorized e
       #TODO: Use the exception to build body/headers
       true
+    end
+    def handle_exception(e)
+      puts e.message
+      puts e.backtrace.join("\n")
     end
     def method_missing meth, *args
       raise NoMethodError unless request.path_info[meth]
