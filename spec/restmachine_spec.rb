@@ -51,11 +51,7 @@ describe Restmachine do
     Person.delete_all
   end
 
-  it 'has a version number' do
-    expect(Restmachine::VERSION).not_to be nil
-  end
-
-  describe 'Log in' do
+  describe 'Session management' do
     it 'should provide json of user' do
       header 'Accept', 'application/json'
       header 'Content-Type', 'application/x-www-form-url-encoded'
@@ -65,7 +61,7 @@ describe Restmachine do
       expect(response.body).to eq({name: "Guest"}.to_json)
     end
   end
-  describe 'GET /people' do
+  describe 'Encoding management' do
     it 'returns an empty json array' do
       header 'Accept', 'application/json'
       get '/people.json'
@@ -79,15 +75,30 @@ describe Restmachine do
       expect(response.headers['Content-Type']).to eq('text/html')
     end
   end
-  describe 'GET /people/1' do
-    it 'returns 404 because there is no resource' do
+  describe 'Object Lifecycle' do
+    it 'fails to get invalid object' do
       header 'Accept', 'application/json'
-      get '/people/1.json'
+      get '/people/1'
       expect(response.code).to eq(404)
     end
-  end
-  describe 'Object Lifecycle for /people' do
-    it 'creates an order object, updates it, and deletes it' do
+    it 'gets valid object' do
+      person = Person.create({name: 'name', age: 21})
+      header 'Accept', 'application/json'
+      get "/people/#{person.id}"
+      expect(response.code).to eq(200)
+      expect(response.headers['Content-Type']).to eq('application/json')
+      expect(JSON.parse(response.body)['name']).to eq('name')
+      expect(JSON.parse(response.body)['age']).to eq(21)
+    end
+    it 'gets html for object' do
+      person = Person.create({name: 'name', age: 21})
+      get "/people/#{person.id}"
+      expect(response.code).to eq(200)
+      expect(response.headers['Content-Type']).to eq('application/json')
+      expect(JSON.parse(response.body)['name']).to eq('name')
+      expect(JSON.parse(response.body)['age']).to eq(21)
+    end
+    it 'fails to create invalid object' do
       #Create invalid object
       header 'Accept', 'application/json'
       header 'Content-Type', 'application/json'
@@ -95,7 +106,8 @@ describe Restmachine do
       post '/people'
       expect(response.code).to eq(422)
       expect(response.body).to eq({errors:[{age:["must be greater than 18"]}]}.to_json)
-      puts "    Successfully verified error response on create"
+    end
+    it 'creates a valid object' do
       #Create valid object
       header 'Accept', 'application/json'
       header 'Content-Type', 'application/json'
@@ -103,52 +115,35 @@ describe Restmachine do
       post '/people'
       expect(response.code).to eq(201)
       location = response.headers['Location']
-      puts "    Successfully verified create"
       id = location.split('/').last
-      #Try to get created object
-      get location
-      expect(response.code).to eq(200)
-      expect(response.headers['Content-Type']).to eq('application/json')
-      obj = JSON.parse(response.body)
-      expect(obj['name']).to eq('name')
-      puts "    Successfully verified created document matches expected"
-      #Try to update object to something invalid
-      obj['age'] = 17
-      body obj.to_json
-      put "/people/#{id}"
+      expect(Person.find(id).id.to_s).to eq(id)
+    end
+    it 'fails to apply an invalid update' do
+      person = Person.create({name: 'name', age: 21})
+      header 'Accept', 'application/json'
+      header 'Content-Type', 'application/json'
+      body({name: 'name', age: 17}.to_json)
+      put "/people/#{person.id}"
       expect(response.code).to eq(422)
       expect(response.headers['Content-Type']).to eq('application/json')
-      puts "    Successfully verified invalid updates fail"
-      #Get object and verify it didn't save invalid
-      get "/people/#{id}"
-      expect(response.code).to eq(200)
-      expect(response.headers['Content-Type']).to eq('application/json')
-      obj = JSON.parse(response.body)
-      expect(obj['age']).to eq(21)
-      puts "    Successfully verified invalid update wasn't applied"
-      #Now try a valid update
-      obj['name'] = "newname"
-      obj['age'] = 21
-      body obj.to_json
-      put "/people/#{id}"
+      expect(Person.find(person.id).age).to eq(21)
+    end
+    it 'updates valid object' do
+      person = Person.create({name: 'name', age: 21})
+      header 'Accept', 'application/json'
+      header 'Content-Type', 'application/json'
+      body({name: 'newname', age: 21}.to_json)
+      put "/people/#{person.id}"
       expect(response.code).to eq(204)
       expect(response.headers['Content-Type']).to eq('application/json')
-      puts "    Successfully submitted valid update"
-      #Check that the update applied
-      get "/people/#{id}"
-      expect(response.code).to eq(200)
-      expect(response.headers['Content-Type']).to eq('application/json')
-      obj = JSON.parse(response.body)
-      expect(obj['name']).to eq('newname')
-      puts "    Successfully verified updated document matches expected"
+      expect(Person.find(person.id).name).to eq('newname')
+    end
+    it 'deletes valid object' do
+      person = Person.create({name: 'name', age: 21})
       #Try to delete it
-      delete "/people/#{id}"
+      delete "/people/#{person.id}"
       expect(response.code).to eq(204)
-      puts "    Successfully deleted document"
-      #Verify it is gone
-      get "/people/#{id}"
-      expect(response.code).to eq(404)
-      puts "    Successfully verified document was deleted"
+      expect(Person.find(person.id)).to eq(nil)
     end
   end
 end

@@ -21,9 +21,6 @@ module Restmachine
       def post_is_create?
         true
       end
-      def create_returns_resource
-        true
-      end
       def handle_request
         if post_is_create? and request.post?
           attributes = validated_attributes(params, model, :create)
