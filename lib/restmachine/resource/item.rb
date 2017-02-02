@@ -25,9 +25,6 @@ module Restmachine
           elsif request.delete?
             authorize resource, :delete? and xsrf_valid?
           end
-        elsif allow_missing_put? and request.put?
-          authorize model, :create? and xsrf_valid?
-          @action = :create
         end
         false
       rescue Pundit::NotAuthorizedError => e
@@ -43,17 +40,24 @@ module Restmachine
         @resource
       end
       def handle_request
-        case @action
-        when :update
-          update
-        when :create
-          create
-          201
+        attributes = validated_attributes(params, resource, @action)
+        if attributes.respond_to? :messages
+          if attributes.messages.length == 0
+            update attributes.to_h
+          else
+            errors << attributes.messages
+            generate_post_response
+            422
+          end
+        else
+          resource = update params
         end
       end
       def to_json
         if errors.empty?
-          resource.to_json
+          visible = visible_attributes(resource, :show)
+          resources = policy_scope(model)
+          visible ? resource.to_json(only: visible) : resource.to_json
         else
           {errors: errors}.to_json
         end

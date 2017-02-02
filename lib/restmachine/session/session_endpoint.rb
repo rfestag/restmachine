@@ -6,6 +6,9 @@ module Restmachine
       def self.create authenticator, controller: nil, **opts
         Class.new(self) do
           include (controller || Controller)
+          def include
+            super()
+          end
           define_method :authenticator do
             authenticator
           end

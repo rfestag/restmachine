@@ -9,6 +9,9 @@ module Restmachine
                              authenticator: nil
         Class.new(self) do
           include (controller || Controller)
+          def initialize
+            super()
+          end
           define_method :authenticator do
             authenticator
           end

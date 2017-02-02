@@ -4,6 +4,7 @@ require 'mimemagic'
 require 'webmachine'
 require 'json'
 require 'pundit'
+require 'restmachine/extensions/pundit'
 module Restmachine
   module Endpoint
     def self.included klass
@@ -45,6 +46,8 @@ module Restmachine
       types = content_types_provided.map {|pair| pair.first }
       content_type = choose_media_type(types, request.accept)
       handler = content_types_provided.find{|ct, _| content_type.type_matches?(Webmachine::MediaType.parse(ct)) }.last
+      response.headers['Content-Type'] = content_type.type
+      response.body = send(handler)
       [content_type, send(handler)]
     end
     def is_authorized? header
@@ -110,7 +113,7 @@ module Restmachine
       puts e.backtrace.join("\n")
     end
     def method_missing meth, *args
-      raise NoMethodError unless request.path_info[meth]
+      raise NoMethodError.new("Couldn't find parameter: #{meth}") unless request.path_info[meth]
       request.path_info[meth]
     end
   end

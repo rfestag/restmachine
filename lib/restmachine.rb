@@ -3,6 +3,7 @@ base_path = File.expand_path(File.dirname(__FILE__))
 Treetop.load(File.join(base_path, 'restmachine', 'grammar', 'restmachine_path.treetop'))
 
 require 'time'
+require 'dry-validation'
 require "restmachine/version"
 require 'webmachine'
 require 'webmachine/actionview'
@@ -11,6 +12,7 @@ require 'restmachine/extensions/route_parser'
 require 'restmachine/extensions/route'
 require 'restmachine/extensions/dispatcher'
 require 'restmachine/extensions/authentication'
+require 'restmachine/extensions/string'
 require 'restmachine/errors'
 require 'restmachine/application_policy'
 require 'restmachine/endpoint'

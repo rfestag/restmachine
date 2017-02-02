@@ -35,4 +35,6 @@ Gem::Specification.new do |spec|
   spec.add_dependency "thor"
   spec.add_dependency "treetop"
   spec.add_dependency "seconds"
+  spec.add_dependency "dry-validation"
+  #spec.add_dependency "strong_parameters"
 end

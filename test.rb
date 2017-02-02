@@ -18,4 +18,5 @@ MyApp = Webmachine::Application.new do |app|
     resource Order
   end
 end
-MyApp.run
+puts Order.where(id: id).select([:id]).to_a
+#MyApp.run

@@ -8,10 +8,22 @@ Webmachine::ActionView.configure do |config|
   config.view_paths = ['spec/views/']
   config.handlers = [:erb, :haml, :builder]
 end
-class OrderPolicy < Restmachine::ApplicationPolicy; end
-class Order
+class PersonPolicy < Restmachine::ApplicationPolicy; 
+  def schema
+    Dry::Validation.Form do
+      required(:name).filled(:str?)
+      required(:age).filled(:int?, gt?: 18)
+    end
+  end
+end
+class Person
   include Mongoid::Document
-  field :name
+  field :name, type: String
+  field :age, type: Integer
+
+  def uri
+    id
+  end
 end
 module LoginController
   def login
@@ -26,7 +38,7 @@ MyApp = Webmachine::Application.new do |app|
 
   app.routes do
     login authenticator, controller: LoginController
-    resource Order
+    resource Person
   end
 end
 
@@ -36,7 +48,7 @@ describe Restmachine do
   let(:app) {MyApp}
 
   before do
-    Order.delete_all
+    Person.delete_all
   end
 
   it 'has a version number' do
@@ -53,55 +65,90 @@ describe Restmachine do
       expect(response.body).to eq({name: "Guest"}.to_json)
     end
   end
-  describe 'GET /orders' do
+  describe 'GET /people' do
     it 'returns an empty json array' do
       header 'Accept', 'application/json'
-      get '/orders.json'
+      get '/people.json'
       expect(response.code).to eq(200)
       expect(response.headers['Content-Type']).to eq('application/json')
       expect(response.body).to eq('[]')
     end
     it 'returns HTML' do
-      get '/orders.html'
+      get '/people.html'
       expect(response.code).to eq(200)
       expect(response.headers['Content-Type']).to eq('text/html')
     end
   end
-  describe 'GET /orders/1' do
+  describe 'GET /people/1' do
     it 'returns 404 because there is no resource' do
       header 'Accept', 'application/json'
-      get '/orders/1.json'
+      get '/people/1.json'
       expect(response.code).to eq(404)
     end
   end
-  describe 'Object Lifecycle for /orders' do
+  describe 'Object Lifecycle for /people' do
     it 'creates an order object, updates it, and deletes it' do
+      #Create invalid object
       header 'Accept', 'application/json'
       header 'Content-Type', 'application/json'
-      body({name: 'name'}.to_json)
-      post '/orders'
+      body({name: 'name', age: 18}.to_json)
+      post '/people'
+      expect(response.code).to eq(422)
+      expect(response.body).to eq({errors:[{age:["must be greater than 18"]}]}.to_json)
+      puts "    Successfully verified error response on create"
+      #Create valid object
+      header 'Accept', 'application/json'
+      header 'Content-Type', 'application/json'
+      body({name: 'name', age: 21}.to_json)
+      post '/people'
       expect(response.code).to eq(201)
       location = response.headers['Location']
+      puts "    Successfully verified create"
+      id = location.split('/').last
+      #Try to get created object
       get location
       expect(response.code).to eq(200)
       expect(response.headers['Content-Type']).to eq('application/json')
       obj = JSON.parse(response.body)
-      id = obj['_id']['$oid']
       expect(obj['name']).to eq('name')
-      obj['name'] = "newname"
+      puts "    Successfully verified created document matches expected"
+      #Try to update object to something invalid
+      obj['age'] = 17
       body obj.to_json
-      put "/orders/#{id}"
+      put "/people/#{id}"
+      expect(response.code).to eq(422)
+      expect(response.headers['Content-Type']).to eq('application/json')
+      puts "    Successfully verified invalid updates fail"
+      #Get object and verify it didn't save invalid
+      get "/people/#{id}"
+      expect(response.code).to eq(200)
+      expect(response.headers['Content-Type']).to eq('application/json')
+      obj = JSON.parse(response.body)
+      expect(obj['age']).to eq(21)
+      puts "    Successfully verified invalid update wasn't applied"
+      #Now try a valid update
+      obj['name'] = "newname"
+      obj['age'] = 21
+      body obj.to_json
+      put "/people/#{id}"
       expect(response.code).to eq(204)
       expect(response.headers['Content-Type']).to eq('application/json')
-      get "/orders/#{id}"
+      puts "    Successfully submitted valid update"
+      #Check that the update applied
+      get "/people/#{id}"
       expect(response.code).to eq(200)
       expect(response.headers['Content-Type']).to eq('application/json')
       obj = JSON.parse(response.body)
       expect(obj['name']).to eq('newname')
-      delete "/orders/#{id}"
+      puts "    Successfully verified updated document matches expected"
+      #Try to delete it
+      delete "/people/#{id}"
       expect(response.code).to eq(204)
-      get "/orders/#{id}"
+      puts "    Successfully deleted document"
+      #Verify it is gone
+      get "/people/#{id}"
       expect(response.code).to eq(404)
+      puts "    Successfully verified document was deleted"
     end
   end
 end

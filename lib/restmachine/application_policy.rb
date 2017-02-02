@@ -16,6 +16,13 @@ module Restmachine
     def show?
       true
     end
+    def visible_attributes
+      #By default, don't return _id
+      @visible_attributes ||= model.fields.keys - ['_id']
+    end
+    def model
+      @resource.is_a?(Class) ? @resource : @resource.class
+    end
     class Scope
       attr_reader :user, :scope
       def initialize user, scope
