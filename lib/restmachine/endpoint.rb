@@ -6,6 +6,7 @@ require 'json'
 require 'pundit'
 require 'restmachine/extensions/pundit'
 module Restmachine
+  class XSRFValidityError < StandardError; end
   module Endpoint
     def self.included klass
       klass.class_eval do
@@ -22,6 +23,8 @@ module Restmachine
 
     def initialize
       @errors = []
+      @params = {}
+      @parsed_params = false
     end
     def credential_to_user credential 
       credential
@@ -39,10 +42,8 @@ module Restmachine
     end
     def is_authorized? header
       if respond_to? :authenticate
-        valid_session = authenticate(header, request) do |credential|
-          @current_user = credential_to_user(credential)
-        end
-        valid_session || allow_null_sessions
+        @current_user = authenticate(header, request)
+        !@current_user.nil? || allow_null_sessions
       else
         true
       end
@@ -65,35 +66,56 @@ module Restmachine
        ["application/x-www-form-url-encoded", :from_form],
        ["multipart/form_data", :from_multipart]]
     end
+    def delete_resource
+      raise Restmachine::XSRFValidityError.new("Could not confirm authenticity of request") unless xsrf_valid?
+      handle_delete
+      true
+    rescue Restmachine::XSRFValidityError => e
+      @errors << e.message
+      403
+    end
     def xsrf_valid?
-      request.cookies['XSRF-TOKEN'] == request.headers['X-XSRF-TOKEN']
+      authenticity_token = request.headers['X-XSRF-TOKEN'] || params['authenticity_token']
+      #puts "#{authenticity_token} == #{xsrf_token}"
+      !authenticity_token.nil? and xsrf_token == authenticity_token
     end
     def from_json
-      @params ||= JSON.parse(request.body.to_s)
+      #We do this so that we always make params into an object, and only try to parse once
+      @params = JSON.parse(request.body.to_s) unless @parsed_params
+      @parsed_params = true
+      raise Restmachine::XSRFValidityError.new("Could not confirm authenticity of request") unless xsrf_valid?
       handle_request if respond_to? :handle_request
     rescue JSON::ParserError => e
       @errors << e.message
+    rescue Restmachine::XSRFValidityError => e
+      @errors << e.message
+      403
     end
     def from_form
       #Perhaps not ideal, but if a parameter is sent multiple times, we want
       #an array. Let the service deal with knowing whether multiple are expected
-      @params ||= URI.decode_www_form(request.body.to_s).reduce({}) do |q, (k,v)|
+      @params = URI.decode_www_form(request.body.to_s).reduce({}) do |q, (k,v)|
         if q[k]
           q[k] = (q[k].is_a? Array) ? q[k] << v : [q[k], v]
         else
           q[k] = v
         end
-      end
-      @params
+      end unless @parsed_params
+      @parsed_params = true
+      raise Restmachine::XSRFValidityError.new("Could not confirm authenticity of request") unless xsrf_valid?
       handle_request if respond_to? :handle_request
       #TODO: Rescue from parse error?
+    rescue JSON::ParserError => e
+      @errors << e.message
+    rescue Restmachine::XSRFValidityError => e
+      @errors << e.message
+      403
     end
     def from_multipart
       raise "multipart/form_data not supported yet"
     end
-    def unauthorized e
+    def handle_unauthorized e
       #TODO: Use the exception to build body/headers
-      true
     end
     def handle_exception(e)
       puts e.message
@@ -101,7 +123,6 @@ module Restmachine
     end
     def finish_request
       response.set_cookie 'XSRF-TOKEN', xsrf_token, secure: true, expires: xsrf_expiration if @xsrf_changed
-      puts xsrf_token
     end
     def xsrf_enabled
       true

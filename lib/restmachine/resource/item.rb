@@ -18,18 +18,20 @@ module Restmachine
       def forbidden?
         if resource
           if request.get?
-            authorize resource, :show?
+            authorize(resource, :show?)
           elsif request.put?
-            authorize resource, :update? and xsrf_valid?
             @action = :update
+            authorize(resource, :update?)
           elsif request.delete?
-            authorize resource, :delete? and xsrf_valid?
+            authorize(resource, :delete?)
           end
         end
+        #If we get here without throwing an exception, we can access the resource
         false
       rescue Pundit::NotAuthorizedError => e
-        puts e.inspect
-        unauthorized(e)
+        puts e.message
+        handle_unauthorized(e)
+        true
       end
       def resource
         #We do it this way for cases where a resource
@@ -53,6 +55,9 @@ module Restmachine
           resource = update params
         end
       end
+      def handle_delete
+        delete
+      end
       def to_json
         if errors.empty?
           visible = visible_attributes(resource, :show)
@@ -69,10 +74,6 @@ module Restmachine
       end
       def resource_exists?
         resource
-      end
-      def delete_resource
-        delete
-        true
       end
     end
   end

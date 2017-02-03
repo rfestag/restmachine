@@ -10,7 +10,7 @@ module Restmachine
       TOKEN_HEADER = /^Bearer (.*)$/i.freeze
       attr_reader :issuer
 
-      def initialize algorithm: 'ES256', secret: nil, issuer: nil, trusted_issuers: {}
+      def initialize algorithm: 'ES256', secret: nil, issuer: nil, trusted_issuers: {}, &block
         @issuer = issuer
         @secret = secret
         @issuers = trusted_issuers
@@ -55,8 +55,10 @@ module Restmachine
           raise InvalidAlgorithmError.new 'Algorithm not recognized'
         end
         @issuers[@issuer] = @public
+        @block = block
       end
       def encode_token credentials
+        credentials[:exp] = credentials[:exp].to_i if credentials[:exp]
         credentials[:iss] = @issuer
         ::JWT.encode(credentials, @secret, @algorithm)
       end
@@ -69,7 +71,8 @@ module Restmachine
             else
               return (pub)? ::JWT.decode(token, pub, @validate, {algorithm: @algorithm}) : nil
             end
-          rescue ::JWT::VerificationError => e
+          rescue ::JWT::ExpiredSignature, ::JWT::VerificationError => e
+            puts "#{e.class}: #{e.message}"
             return nil
           end 
         else
@@ -77,19 +80,15 @@ module Restmachine
         end
       end
       def validate_session header, request
+        credentials = nil
         token = get_token header, request
+        #If there is a token, decode it
         if token
           issuer = (@issuers.length == 1) ? @issuer : JSON.parse(Base64.decode64(token.split('.').first))['iss']
-          credentials = decode_token token, issuer: issuer
-          if credentials
-            yield credentials if block_given?
-            return true
-          else 
-            return false
-          end
-        else
-          return false
+          credentials, jwt_header = decode_token token, issuer: issuer
         end
+        #Pass the successfully decoded credentials to the block (or nil if the credentials are invalid/nonexistant)
+        @block.call(credentials)
       end
     end
   end

@@ -27,7 +27,6 @@ class Person
 end
 module LoginController
   def login
-    puts params
     {name: 'Guest'}
   end
 end
@@ -35,11 +34,13 @@ end
 MyApp = Webmachine::Application.new do |app|
   key = OpenSSL::PKey::EC.new 'prime256v1'
   key.generate_key
-  authenticator = Restmachine::Authenticator::JWTCookie.new secret: key
+  authenticator = Restmachine::Authenticator::JWTCookie.new secret: key do |credential|
+    credential
+  end
 
   app.routes do
     login authenticator, controller: LoginController
-    resource Person
+    resource Person, authenticator: authenticator
   end
 end
 
@@ -63,6 +64,48 @@ describe Restmachine do
       expect(response.body).to eq({name: "Guest"}.to_json)
       header 'Accept', 'application/json'
       get '/people'
+    end
+  end
+  describe 'XSRF (CSRF) prevention' do
+    #XSRF protection is done via double-submit. Any protected request must submit
+    #both an XSRF-TOKEN cookie and either X-XSRF-TOKEN header of authentication_token parameter
+    it 'should fail if no tokens are sent via cookie, headers, or parameters' do
+      header 'Accept', 'application/json'
+      header 'Content-Type', 'application/json'
+      body({name: 'name', age: 21}.to_json)
+      post '/people'
+      expect(response.code).to eq(403)
+    end
+    it 'should fail unauthorized when there is no double submit with the cookie' do
+      header 'Accept', 'application/json'
+      header 'Content-Type', 'application/json'
+      cookie 'XSRF-TOKEN', 'FAKE_XSRF_TOKEN'
+      body({name: 'name', age: 21}.to_json)
+      post '/people'
+      expect(response.code).to eq(403)
+    end
+    it 'should accept authenticity_token parameter' do
+      header 'Accept', 'application/json'
+      header 'Content-Type', 'application/json'
+      cookie 'XSRF-TOKEN', 'FAKE_XSRF_TOKEN'
+      body({name: 'name', age: 21, authenticity_token: 'FAKE_XSRF_TOKEN'}.to_json)
+      post '/people'
+      expect(response.code).to eq(201)
+      location = response.headers['Location']
+      id = location.split('/').last
+      expect(Person.find(id).id.to_s).to eq(id)
+    end
+    it 'should accept X-XSRF-TOKEN header for double submit' do
+      header 'Accept', 'application/json'
+      header 'Content-Type', 'application/json'
+      header 'X-XSRF-TOKEN', 'FAKE_XSRF_TOKEN'
+      cookie 'XSRF-TOKEN', 'FAKE_XSRF_TOKEN'
+      body({name: 'name', age: 21}.to_json)
+      post '/people'
+      expect(response.code).to eq(201)
+      location = response.headers['Location']
+      id = location.split('/').last
+      expect(Person.find(id).id.to_s).to eq(id)
     end
   end
   describe 'Encoding management' do
@@ -116,6 +159,7 @@ describe Restmachine do
       #Create invalid object
       header 'Accept', 'application/json'
       header 'Content-Type', 'application/json'
+      protect_from_forgery
       body({name: 'name', age: 18}.to_json)
       post '/people'
       expect(response.code).to eq(422)
@@ -125,6 +169,7 @@ describe Restmachine do
       #Create valid object
       header 'Accept', 'application/json'
       header 'Content-Type', 'application/json'
+      protect_from_forgery
       body({name: 'name', age: 21}.to_json)
       post '/people'
       expect(response.code).to eq(201)
@@ -136,6 +181,7 @@ describe Restmachine do
       person = Person.create({name: 'name', age: 21})
       header 'Accept', 'application/json'
       header 'Content-Type', 'application/json'
+      protect_from_forgery
       body({name: 'name', age: 17}.to_json)
       put "/people/#{person.id}"
       expect(response.code).to eq(422)
@@ -146,6 +192,7 @@ describe Restmachine do
       person = Person.create({name: 'name', age: 21})
       header 'Accept', 'application/json'
       header 'Content-Type', 'application/json'
+      protect_from_forgery
       body({name: 'newname', age: 21}.to_json)
       put "/people/#{person.id}"
       expect(response.code).to eq(204)
@@ -155,6 +202,7 @@ describe Restmachine do
     it 'deletes valid object' do
       person = Person.create({name: 'name', age: 21})
       #Try to delete it
+      protect_from_forgery
       delete "/people/#{person.id}"
       expect(response.code).to eq(204)
       expect(Person.find(person.id)).to eq(nil)

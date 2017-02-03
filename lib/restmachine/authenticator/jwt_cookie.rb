@@ -3,13 +3,13 @@ require 'jwt'
 module Restmachine
   module Authenticator
     class JWTCookie < JWT
-      DEFAULT_TTL = 6.hours
       def create_session credentials, response, opts={}
         payload = credentials.dup
-        payload[:exp] = Time.now + opts[:ttl]
+        exp  = Time.now + opts[:ttl]
+        payload[:exp] = exp.to_i
         payload[:xsrfToken] = opts[:xsrf]
         token = encode_token(payload)
-        response.set_cookie 'USER-TOKEN', token, secure: true, httponly: true, expires: payload[:exp]
+        response.set_cookie 'USER-TOKEN', token, secure: true, httponly: true, expires: exp
         token
       end
       def destroy_session response

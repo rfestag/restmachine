@@ -12,11 +12,14 @@ module Restmachine
       def forbidden?
         #Only need to do XSRF detection if this is a create. Otherwise it is a list via GET
         if post_is_create? and request.post?
-          authorize model, :create? and xsrf_valid?
+          authorize(model, :create?)
         end
+        #If we get here without throwing an exception, we can access the resource
         false
-      rescue Pundit::NotAuthorizedError => e
-        unauthorized(e)
+      rescue Restmachine::XSRFValidityError, Pundit::NotAuthorizedError => e
+        puts e.message
+        handle_unauthorized(e)
+        true
       end
       def post_is_create?
         true
