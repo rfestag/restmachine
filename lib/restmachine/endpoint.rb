@@ -16,25 +16,12 @@ module Restmachine
       end
     end
 
-    attr_reader :params, :xsrf_token
+    attr_reader :params
     attr_accessor :errors
     attr_accessor :current_user
 
     def initialize
-      if xsrf_enabled
-        @xsrf_token = request.cookies['XSRF-TOKEN'] || SecureRandom.hex(32)
-        response.set_cookie 'XSRF-TOKEN', @xsrf_token, secure: true, expires: xsrf_expiration unless request.cookies['XSRF-TOKEN']
-      end
       @errors = []
-    end
-    def xsrf_enabled
-      true
-    end
-    def xsrf_expiration
-      @xsrf_expiration ||= Time.now + xsrf_ttl
-    end
-    def xsrf_ttl
-      @xsrf_ttl ||= 24.hours
     end
     def credential_to_user credential 
       credential
@@ -111,6 +98,26 @@ module Restmachine
     def handle_exception(e)
       puts e.message
       puts e.backtrace.join("\n")
+    end
+    def finish_request
+      response.set_cookie 'XSRF-TOKEN', xsrf_token, secure: true, expires: xsrf_expiration if @xsrf_changed
+      puts xsrf_token
+    end
+    def xsrf_enabled
+      true
+    end
+    def xsrf_expiration
+      @xsrf_expiration ||= Time.now + xsrf_ttl
+    end
+    def xsrf_ttl
+      @xsrf_ttl ||= 24.hours
+    end
+    def generate_xsrf_token
+      @xsrf_changed = true
+      @xsrf_token = SecureRandom.hex(32)
+    end
+    def xsrf_token
+      @xsrf_token ||= (request.cookies['XSRF-TOKEN'] || generate_xsrf_token)
     end
     def method_missing meth, *args
       raise NoMethodError.new("Couldn't find parameter: #{meth}") unless request.path_info[meth]

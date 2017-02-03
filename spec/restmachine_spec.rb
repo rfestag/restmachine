@@ -27,6 +27,7 @@ class Person
 end
 module LoginController
   def login
+    puts params
     {name: 'Guest'}
   end
 end
@@ -53,12 +54,15 @@ describe Restmachine do
 
   describe 'Session management' do
     it 'should provide json of user' do
+      get '/people'
       header 'Accept', 'application/json'
       header 'Content-Type', 'application/x-www-form-url-encoded'
-      post '/login', {valid_credentials: true}
+      post '/login', {params: {valid_credentials: true}}
       expect(response.code).to eq(200)
       expect(response.headers['Content-Type']).to eq('application/json')
       expect(response.body).to eq({name: "Guest"}.to_json)
+      header 'Accept', 'application/json'
+      get '/people'
     end
   end
   describe 'Encoding management' do
@@ -76,6 +80,16 @@ describe Restmachine do
     end
   end
   describe 'Object Lifecycle' do
+    it 'lists all visible objects' do
+      person = Person.create({name: 'person1', age: 21})
+      person = Person.create({name: 'person2', age: 22})
+      header 'Accept', 'application/json'
+      get '/people'
+      expect(response.code).to eq(200)
+      expect(response.headers['Content-Type']).to eq('application/json')
+      people = JSON.parse(response.body)
+      expect(people.count).to eq(2)
+    end
     it 'fails to get invalid object' do
       header 'Accept', 'application/json'
       get '/people/1'

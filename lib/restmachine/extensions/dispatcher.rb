@@ -19,7 +19,7 @@ module Restmachine
       def logout authenticator, *args, path: nil, controller: nil, &block
         path ||= "/logout"
         opts = {path: path, controller: controller}
-        add path, Restmachine::Session::Login.create(authenticator, opts), *args, &block
+        add path, Restmachine::Session::Logout.create(authenticator, opts), *args, &block
       end
     end
   end

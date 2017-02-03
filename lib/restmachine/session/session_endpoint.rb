@@ -2,7 +2,6 @@ module Restmachine
   module Session
     class SessionEndpoint < Webmachine::Resource
       include Endpoint
-
       def self.create authenticator, controller: nil, **opts
         Class.new(self) do
           include (controller || Controller)
@@ -13,9 +12,6 @@ module Restmachine
             authenticator
           end
         end
-      end
-      def allowed_methods
-        %w(POST)
       end
       def process_post
         @post_result = handle_request
