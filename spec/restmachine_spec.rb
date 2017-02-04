@@ -30,6 +30,14 @@ module LoginController
     {name: 'Guest'}
   end
 end
+module PeopleController
+  def allowed_origins
+    ['www.valid.com:80']
+  end
+  def allow_cors
+    true
+  end
+end
 
 MyApp = Webmachine::Application.new do |app|
   key = OpenSSL::PKey::EC.new 'prime256v1'
@@ -40,7 +48,7 @@ MyApp = Webmachine::Application.new do |app|
 
   app.routes do
     login authenticator, controller: LoginController
-    resource Person, authenticator: authenticator
+    resource Person, authenticator: authenticator, controller: PeopleController
   end
 end
 
@@ -69,6 +77,14 @@ describe Restmachine do
   describe 'XSRF (CSRF) prevention' do
     #XSRF protection is done via double-submit. Any protected request must submit
     #both an XSRF-TOKEN cookie and either X-XSRF-TOKEN header of authentication_token parameter
+    it 'should fail if the origin is not explicitly allowed' do
+      header 'Origin', 'badguy.org:80'
+      header 'Accept', 'application/json'
+      header 'Content-Type', 'application/json'
+      body({name: 'name', age: 21}.to_json)
+      post '/people'
+      expect(response.code).to eq(403)
+    end
     it 'should fail if no tokens are sent via cookie, headers, or parameters' do
       header 'Accept', 'application/json'
       header 'Content-Type', 'application/json'
@@ -106,6 +122,21 @@ describe Restmachine do
       location = response.headers['Location']
       id = location.split('/').last
       expect(Person.find(id).id.to_s).to eq(id)
+    end
+  end
+  describe 'CORS support' do
+    it 'should accept explicitly allowed origins' do
+      header 'Origin', 'www.valid.com:80'
+      header 'Accept', 'application/json'
+      header 'Content-Type', 'application/json'
+      protect_from_forgery
+      body({name: 'name', age: 21}.to_json)
+      post '/people'
+      expect(response.code).to eq(201)
+      expect(response.headers['Access-Control-Allow-Origin']).to eq('www.valid.com:80')
+      expect(response.headers['Access-Control-Allow-Methods']).to eq('GET,POST')
+      expect(response.headers['Access-Control-Allow-Headers']).to eq('DNT,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Content-Range,Range')
+      expect(response.headers['Access-Control-Expose-Headers']).to eq('DNT,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Content-Range,Range')
     end
   end
   describe 'Encoding management' do

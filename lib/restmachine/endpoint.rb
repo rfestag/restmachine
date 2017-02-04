@@ -26,8 +26,23 @@ module Restmachine
       @params = {}
       @parsed_params = false
     end
-    def credential_to_user credential 
-      credential
+    def server_origins
+      @server_origins = [request.headers['Host']].reject(&:nil?)
+    end
+    def allowed_origins
+      []
+    end
+    def allow_cors
+      false
+    end
+    def allowed_methods
+      %w(POST GET PUT DELETE OPTIONS)
+    end
+    def allowed_headers
+      %w(DNT Keep-Alive User-Agent X-Requested-With If-Modified-Since Cache-Control Content-Type Content-Range Range)
+    end
+    def max_age
+      86400
     end
     def allow_null_sessions
       true
@@ -75,9 +90,12 @@ module Restmachine
       403
     end
     def xsrf_valid?
+      origin = request.headers['Origin']
+      valid_origin = server_origins.include?(origin)
+      valid_origin ||= allowed_origins.include?(origin) and allow_cors
       authenticity_token = request.headers['X-XSRF-TOKEN'] || params['authenticity_token']
       #puts "#{authenticity_token} == #{xsrf_token}"
-      !authenticity_token.nil? and xsrf_token == authenticity_token
+      valid_origin and !authenticity_token.nil? and xsrf_token == authenticity_token
     end
     def from_json
       #We do this so that we always make params into an object, and only try to parse once
@@ -123,6 +141,12 @@ module Restmachine
     end
     def finish_request
       response.set_cookie 'XSRF-TOKEN', xsrf_token, secure: true, expires: xsrf_expiration if @xsrf_changed
+      if allow_cors
+        response.headers['Access-Control-Allow-Origin'] = allowed_origins.join(",")
+        response.headers['Access-Control-Allow-Methods'] = allowed_methods.join(",")
+        response.headers['Access-Control-Allow-Headers'] = allowed_headers.join(",")
+        response.headers['Access-Control-Expose-Headers'] = allowed_headers.join(",")
+      end
     end
     def xsrf_enabled
       true

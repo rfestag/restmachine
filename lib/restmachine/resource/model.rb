@@ -8,7 +8,8 @@ module Restmachine
                              controller: nil, 
                              authenticator: nil
         Class.new(self) do
-          include (controller || Controller)
+          include Controller
+          include controller if controller
           def initialize
             super()
           end
