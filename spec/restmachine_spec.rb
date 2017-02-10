@@ -139,7 +139,7 @@ describe Restmachine do
       expect(response.headers['Access-Control-Expose-Headers']).to eq('DNT,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Content-Range,Range')
     end
   end
-  describe 'Encoding management' do
+  describe 'Format management' do
     it 'returns an empty json array' do
       header 'Accept', 'application/json'
       get '/people.json'

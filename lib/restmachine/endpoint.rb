@@ -122,15 +122,23 @@ module Restmachine
       @parsed_params = true
       raise Restmachine::XSRFValidityError.new("Could not confirm authenticity of request") unless xsrf_valid?
       handle_request if respond_to? :handle_request
-      #TODO: Rescue from parse error?
-    rescue JSON::ParserError => e
-      @errors << e.message
     rescue Restmachine::XSRFValidityError => e
       @errors << e.message
       403
     end
     def from_multipart
       raise "multipart/form_data not supported yet"
+    end
+    def options
+      if allow_cors
+        {'Access-Control-Allow-Origin' => allowed_origins.join(","),
+         'Access-Control-Allow-Methods' => allowed_methods.join(","),
+         'Access-Control-Allow-Headers' => allowed_headers.join(","),
+         'Access-Control-Expose-Headers' => allowed_headers.join(","),
+         'Access-Control-Max-Age' => max_age}
+      else
+        {}
+      end
     end
     def handle_unauthorized e
       #TODO: Use the exception to build body/headers
@@ -147,9 +155,6 @@ module Restmachine
         response.headers['Access-Control-Allow-Headers'] = allowed_headers.join(",")
         response.headers['Access-Control-Expose-Headers'] = allowed_headers.join(",")
       end
-    end
-    def xsrf_enabled
-      true
     end
     def xsrf_expiration
       @xsrf_expiration ||= Time.now + xsrf_ttl
