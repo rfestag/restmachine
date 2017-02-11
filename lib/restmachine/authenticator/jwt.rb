@@ -10,7 +10,7 @@ module Restmachine
       TOKEN_HEADER = /^Bearer (.*)$/i.freeze
       attr_reader :issuer
 
-      def initialize algorithm: 'ES256', secret: nil, issuer: nil, trusted_issuers: {}, &block
+      def initialize algorithm: 'ES256', secret: nil, issuer: nil, trusted_issuers: {}
         @issuer = issuer
         @secret = secret
         @issuers = trusted_issuers
@@ -55,7 +55,7 @@ module Restmachine
           raise InvalidAlgorithmError.new 'Algorithm not recognized'
         end
         @issuers[@issuer] = @public
-        @block = block
+        @block = Proc.new if block_given?
       end
       def encode_token credentials
         credentials[:exp] = credentials[:exp].to_i if credentials[:exp]
@@ -88,7 +88,7 @@ module Restmachine
           credentials, jwt_header = decode_token token, issuer: issuer
         end
         #Pass the successfully decoded credentials to the block (or nil if the credentials are invalid/nonexistant)
-        @block.call(credentials)
+        @block.nil? ? credentials : @block.call(credentials)
       end
     end
   end

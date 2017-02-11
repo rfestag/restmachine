@@ -86,6 +86,7 @@ module Restmachine
       handle_delete
       true
     rescue Restmachine::XSRFValidityError => e
+      puts "XSRF Fail"
       @errors << e.message
       403
     end
@@ -95,7 +96,11 @@ module Restmachine
       valid_origin ||= allowed_origins.include?(origin) and allow_cors
       authenticity_token = request.headers['X-XSRF-TOKEN'] || params['authenticity_token']
       #puts "#{authenticity_token} == #{xsrf_token}"
-      valid_origin and !authenticity_token.nil? and xsrf_token == authenticity_token
+      if verify_xsrf
+        valid_origin and !authenticity_token.nil? and xsrf_token == authenticity_token
+      else
+        valid_origin
+      end
     end
     def from_json
       #We do this so that we always make params into an object, and only try to parse once
@@ -140,6 +145,15 @@ module Restmachine
         {}
       end
     end
+    def process_post
+      content_type = Webmachine::MediaType.parse(request.content_type || 'application/octet-stream')
+      acceptable = content_types_accepted.find {|ct, _| content_type.match?(ct) }
+      if acceptable
+        send(acceptable.last)
+      else
+        415
+      end
+    end
     def handle_unauthorized e
       #TODO: Use the exception to build body/headers
     end
@@ -168,6 +182,9 @@ module Restmachine
     end
     def xsrf_token
       @xsrf_token ||= (request.cookies['XSRF-TOKEN'] || generate_xsrf_token)
+    end
+    def verify_xsrf
+      true
     end
     def method_missing meth, *args
       raise NoMethodError.new("Couldn't find parameter: #{meth}") unless request.path_info[meth]

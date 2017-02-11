@@ -61,7 +61,6 @@ module Restmachine
       def to_json
         if errors.empty?
           visible = visible_attributes(resource, :show)
-          resources = policy_scope(model)
           visible ? resource.to_json(only: visible) : resource.to_json
         else
           {errors: errors}.to_json
