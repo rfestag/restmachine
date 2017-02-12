@@ -4,7 +4,7 @@ Restmachine is a Webmachine based framework for creating RESTful applications.
 
 ## Installation
 
-__NOTE"__ This gem has not yet been released. You must check it out and install from source. In the future, the following instructions will apply: 
+__NOTE:__ This gem has not yet been released. You must check it out and install from source. In the future, the following instructions will apply: 
 
 Add this line to your application's Gemfile:
 
