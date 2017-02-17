@@ -29,7 +29,6 @@ module Restmachine
         #If we get here without throwing an exception, we can access the resource
         false
       rescue Pundit::NotAuthorizedError => e
-        puts e.message
         handle_unauthorized(e)
         true
       end

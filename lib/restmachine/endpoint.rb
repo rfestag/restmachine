@@ -86,7 +86,6 @@ module Restmachine
       handle_delete
       true
     rescue Restmachine::XSRFValidityError => e
-      puts "XSRF Fail"
       @errors << e.message
       403
     end
