@@ -111,6 +111,31 @@ describe Restmachine::Endpoint do
       expect(Person.find(id).id.to_s).to eq(id)
     end
     it 'should support multi-part encoding' do
+      header 'Accept', 'application/json'
+      header 'Content-Type', 'multipart/form-data; boundary=38516d25820c4a9aad05f1e42cb442f4'
+      data = %Q{--38516d25820c4a9aad05f1e42cb442f4\r
+Content-Disposition: form-data; name="file"; filename="page.pdf"\r
+Content-Type: application/pdf\r
+Content-Encoding: base64\r
+\r
+H4sICI0fXVQAA3BhZ2UucGRmAAvOz01VCE7MLchJVQhITE8FAAyOwbUQAAAA\r
+--38516d25820c4a9aad05f1e42cb442f4\r
+Content-Disposition: form-data; name="name"\r
+\r
+name\r
+--38516d25820c4a9aad05f1e42cb442f4\r
+Content-Disposition: form-data; name="age"\r
+\r
+21\r
+--38516d25820c4a9aad05f1e42cb442f4--}
+      header 'Content-Length', data.bytesize
+      protect_from_forgery
+      body(data)
+      post '/people'
+      expect(response.code).to eq(201)
+      location = response.headers['Location']
+      id = location.split('/').last
+      expect(Person.find(id).id.to_s).to eq(id)
     end
   end
   describe 'Format management' do

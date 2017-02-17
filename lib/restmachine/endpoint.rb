@@ -1,3 +1,4 @@
+require 'rack'
 require 'seconds'
 require 'securerandom'
 require 'mimemagic'
@@ -79,7 +80,7 @@ module Restmachine
     def content_types_accepted
       @content_types_accepted = [["application/json", :from_json],
        ["application/x-www-form-url-encoded", :from_form],
-       ["multipart/form_data", :from_multipart]]
+       ["multipart/form-data", :from_multipart]]
     end
     def delete_resource
       raise Restmachine::XSRFValidityError.new("Could not confirm authenticity of request") unless xsrf_valid?
@@ -132,7 +133,17 @@ module Restmachine
       403
     end
     def from_multipart
-      raise "multipart/form_data not supported yet"
+      #request.headers['Content-Type'] =~ %r|\Amultipart/.*boundary=\"?(?<boundary>[^\";,]+)\"?|ni
+      %r|\Amultipart/.*boundary=(?<boundary>.*)| =~ request.headers['Content-Type']
+      #/multipart\/form-data;\s*boundary=(?<boundary>.*)/ =~ request.headers['Content-Type']
+      body = StringIO.new(request.body)
+      content_length = request.headers['Content-Length'].to_i
+
+      tempfile = lambda { |filename, content_type| Tempfile.new(["RestmachineMultipart", ::File.extname(filename)]) }
+      bufsize = 16384
+      @params = Rack::Multipart::Parser.new(boundary, body, content_length, {}, tempfile, bufsize).parse
+      @parsed_params = true
+      handle_request if respond_to? :handle_request
     end
     def options
       if allow_cors
