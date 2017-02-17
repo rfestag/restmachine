@@ -3,7 +3,7 @@ module Restmachine
   module Resource
     class Item < Model
       def allowed_methods
-        %w(GET PUT DELETE)
+        %w(OPTIONS GET PUT DELETE)
       end
       def allow_missing_put?
         true

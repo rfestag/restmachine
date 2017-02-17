@@ -2,7 +2,7 @@ module Restmachine
   module Session
     class Logout < SessionEndpoint
       def allowed_methods
-        %w(DELETE)
+        %w(OPTIONS DELETE)
       end
     end
   end

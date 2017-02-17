@@ -2,10 +2,9 @@ module Restmachine
   module Session
     class SessionEndpoint < Webmachine::Resource
       include Endpoint
-      def self.create authenticator, controller: nil, **opts
+      def self.create authenticator, controller, **opts
         Class.new(self) do
-          include Controller
-          include controller if controller
+          include controller
           def include
             super()
           end

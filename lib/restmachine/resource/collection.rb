@@ -4,7 +4,7 @@ module Restmachine
   module Resource
     class Collection < Model
       def allowed_methods
-        %w(GET POST)
+        %w(OPTIONS GET POST)
       end
       def create_path
         @create_path ||= "#{path}/#{next_id}"

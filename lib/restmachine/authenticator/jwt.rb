@@ -23,17 +23,18 @@ module Restmachine
         end
 
         case algorithm
-        when /RS\d{3}/
+        when /RS(\d{3})/
           case @secret
           when String
             #TODO: parse contents of @secret (file)
+            raise "Not implemented yet."
           when nil
             @secret = OpenSSL::PKey::RSA.generate 2048
             @issuer = SecureRandom.hex 32
           end
           raise InvalidCredentialError.new "Secret was not a valid type for #{algorithm}: #{@secret.class}" unless @secret.is_a? OpenSSL::PKey::RSA
           @public = @secret.public_key
-        when /ES\d{3}/
+        when /ES(\d{3})/
           case @secret
           when String
             #TODO: parse contents of @secret (file)
@@ -45,7 +46,7 @@ module Restmachine
           raise InvalidCredentialError.new "Secret was not a valid type for #{algorithm}: #{@secret.class}" unless @secret.is_a? OpenSSL::PKey::EC
           @public = OpenSSL::PKey::EC.new @secret
           @public.private_key = nil
-        when /HS\d{3}/
+        when /HS(\d{3})/
           secret ||= SecureRandom.hex 32
           @secret = secret
           raise InvalidCredentialError.new "Secret was not a valid type for #{algorithm}: #{@secret.class}" unless @secret.is_a? String

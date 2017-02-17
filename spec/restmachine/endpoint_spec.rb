@@ -61,6 +61,16 @@ describe Restmachine::Endpoint do
     end
   end
   describe 'CORS support' do
+    it 'should respond to OPTIONS requests with appropriate headers' do
+      header 'Origin', 'www.valid.com:80'
+      header 'Accept', 'application/json'
+      options '/people'
+      expect(response.code).to eq(200)
+      expect(response.headers['Access-Control-Allow-Origin']).to eq('www.valid.com:80')
+      expect(response.headers['Access-Control-Allow-Methods']).to eq('OPTIONS,GET,POST')
+      expect(response.headers['Access-Control-Allow-Headers']).to eq('DNT,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Content-Range,Range')
+      expect(response.headers['Access-Control-Expose-Headers']).to eq('DNT,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Content-Range,Range')
+    end
     it 'should accept explicitly allowed origins' do
       header 'Origin', 'www.valid.com:80'
       header 'Accept', 'application/json'
@@ -70,7 +80,7 @@ describe Restmachine::Endpoint do
       post '/people'
       expect(response.code).to eq(201)
       expect(response.headers['Access-Control-Allow-Origin']).to eq('www.valid.com:80')
-      expect(response.headers['Access-Control-Allow-Methods']).to eq('GET,POST')
+      expect(response.headers['Access-Control-Allow-Methods']).to eq('OPTIONS,GET,POST')
       expect(response.headers['Access-Control-Allow-Headers']).to eq('DNT,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Content-Range,Range')
       expect(response.headers['Access-Control-Expose-Headers']).to eq('DNT,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Content-Range,Range')
     end

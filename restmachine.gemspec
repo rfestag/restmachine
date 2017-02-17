@@ -22,7 +22,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rake", "~> 10.0"
   spec.add_development_dependency "rspec", "~> 3.0"
   spec.add_development_dependency 'mongoid', '~> 5.1'
-  spec.add_development_dependency 'webmachine-test', '~> 0.3'
+  spec.add_development_dependency 'webmachine-test', '~> 0.4'
   spec.add_development_dependency 'simplecov', '~> 0.11'
   spec.add_development_dependency 'reel', "~> 0.6"
   spec.add_development_dependency 'pry'

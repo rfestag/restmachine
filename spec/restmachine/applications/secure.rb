@@ -68,8 +68,8 @@ SecureApp = Webmachine::Application.new do |app|
   end
 
   app.routes do
-    login authenticator, controller: LoginController
-    logout authenticator, controller: LoginController
+    login authenticator, LoginController
+    logout authenticator, LoginController
     resource Order, authenticator: authenticator, controller: OrderController
   end
 end
