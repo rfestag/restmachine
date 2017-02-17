@@ -85,6 +85,34 @@ describe Restmachine::Endpoint do
       expect(response.headers['Access-Control-Expose-Headers']).to eq('DNT,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Content-Range,Range')
     end
   end
+  describe 'Body encoding' do
+    it 'should support JSON' do
+      #Create valid object
+      header 'Accept', 'application/json'
+      header 'Content-Type', 'application/json'
+      protect_from_forgery
+      body({name: 'name', age: 21}.to_json)
+      post '/people'
+      expect(response.code).to eq(201)
+      location = response.headers['Location']
+      id = location.split('/').last
+      expect(Person.find(id).id.to_s).to eq(id)
+    end
+    it 'should support Form Encoding' do
+      #Create valid object
+      header 'Accept', 'application/json'
+      header 'Content-Type', 'application/x-www-form-url-encoded'
+      protect_from_forgery
+      body("name=name&age=21")
+      post '/people'
+      expect(response.code).to eq(201)
+      location = response.headers['Location']
+      id = location.split('/').last
+      expect(Person.find(id).id.to_s).to eq(id)
+    end
+    it 'should support multi-part encoding' do
+    end
+  end
   describe 'Format management' do
     it 'returns an empty json array' do
       header 'Accept', 'application/json'

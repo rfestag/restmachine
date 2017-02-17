@@ -122,6 +122,7 @@ module Restmachine
         else
           q[k] = v
         end
+        q
       end unless @parsed_params
       @parsed_params = true
       raise Restmachine::XSRFValidityError.new("Could not confirm authenticity of request") unless xsrf_valid?
