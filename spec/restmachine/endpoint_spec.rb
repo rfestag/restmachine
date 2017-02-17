@@ -98,7 +98,28 @@ describe Restmachine::Endpoint do
       id = location.split('/').last
       expect(Person.find(id).id.to_s).to eq(id)
     end
+    it 'should return 400 on bad json' do
+      #Create valid object
+      header 'Accept', 'application/json'
+      header 'Content-Type', 'application/json'
+      protect_from_forgery
+      body({name: 'name', age: 21}.to_json[0..-2])
+      post '/people'
+      expect(response.code).to eq(400)
+    end
     it 'should support Form Encoding' do
+      #Create valid object
+      header 'Accept', 'application/json'
+      header 'Content-Type', 'application/x-www-form-url-encoded'
+      protect_from_forgery
+      body({name: 'name', age: 21}.to_query)
+      post '/people'
+      expect(response.code).to eq(201)
+      location = response.headers['Location']
+      id = location.split('/').last
+      expect(Person.find(id).id.to_s).to eq(id)
+    end
+    it 'should support array and hash parameters' do
       #Create valid object
       header 'Accept', 'application/json'
       header 'Content-Type', 'application/x-www-form-url-encoded'
@@ -110,6 +131,7 @@ describe Restmachine::Endpoint do
       id = location.split('/').last
       expect(Person.find(id).id.to_s).to eq(id)
     end
+
     it 'should support multi-part encoding' do
       header 'Accept', 'application/json'
       header 'Content-Type', 'multipart/form-data; boundary=38516d25820c4a9aad05f1e42cb442f4'
@@ -136,6 +158,30 @@ Content-Disposition: form-data; name="age"\r
       location = response.headers['Location']
       id = location.split('/').last
       expect(Person.find(id).id.to_s).to eq(id)
+    end
+    it 'should return a 400 on multipart parse error' do
+      header 'Accept', 'application/json'
+      header 'Content-Type', 'multipart/form-data; boundary=38516d25820c4a9aad05f1e42cb442f4'
+      data = %Q{--38516d25820c4a9aad05f1e42cb442f4\r
+Content-Disposition: form-data; name="file"; filename="page.pdf"\r
+Content-Type: application/pdf\r
+Content-Encoding: base64\r
+\r
+H4sICI0fXVQAA3BhZ2UucGRmAAvOz01VCE7MLchJVQhITE8FAAyOwbUQAAAA\r
+--38516d25820c4a9aad05f1e42cb442f4\r
+Content-Disposition: form-data; name="name"\r
+\r
+name\r
+--38516d25820c4a9aad05f1e42cb442f4\r
+Content-Disposition: form-data; name="age"\r
+\r
+21\r
+--38516d25820c4a9aad05f1e42cb442f--}
+      header 'Content-Length', data.bytesize
+      protect_from_forgery
+      body(data)
+      post '/people'
+      expect(response.code).to eq(400)
     end
   end
   describe 'Format management' do

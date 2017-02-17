@@ -110,32 +110,25 @@ module Restmachine
       handle_request if respond_to? :handle_request
     rescue JSON::ParserError => e
       @errors << e.message
+      400
     rescue Restmachine::XSRFValidityError => e
       @errors << e.message
       403
     end
     def from_form
-      #Perhaps not ideal, but if a parameter is sent multiple times, we want
-      #an array. Let the service deal with knowing whether multiple are expected
-      @params = URI.decode_www_form(request.body.to_s).reduce({}) do |q, (k,v)|
-        if q[k]
-          q[k] = (q[k].is_a? Array) ? q[k] << v : [q[k], v]
-        else
-          q[k] = v
-        end
-        q
-      end unless @parsed_params
-      @parsed_params = true
+      @params = request.parse_nested_query(request.body.to_s)
+      @parse_params = true
       raise Restmachine::XSRFValidityError.new("Could not confirm authenticity of request") unless xsrf_valid?
       handle_request if respond_to? :handle_request
+    rescue Rack::Utils::ParameterTypeError => e
+      @errors << e.message
+      400
     rescue Restmachine::XSRFValidityError => e
       @errors << e.message
       403
     end
     def from_multipart
-      #request.headers['Content-Type'] =~ %r|\Amultipart/.*boundary=\"?(?<boundary>[^\";,]+)\"?|ni
       %r|\Amultipart/.*boundary=(?<boundary>.*)| =~ request.headers['Content-Type']
-      #/multipart\/form-data;\s*boundary=(?<boundary>.*)/ =~ request.headers['Content-Type']
       body = StringIO.new(request.body)
       content_length = request.headers['Content-Length'].to_i
 
@@ -143,7 +136,14 @@ module Restmachine
       bufsize = 16384
       @params = Rack::Multipart::Parser.new(boundary, body, content_length, {}, tempfile, bufsize).parse
       @parsed_params = true
+      raise Restmachine::XSRFValidityError.new("Could not confirm authenticity of request") unless xsrf_valid?
       handle_request if respond_to? :handle_request
+    rescue EOFError => e
+      @errors << e.message
+      400
+    rescue Restmachine::XSRFValidityError => e
+      @errors << e.message
+      403
     end
     def options
       if allow_cors
