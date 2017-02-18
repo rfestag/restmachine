@@ -198,8 +198,14 @@ module Restmachine
       true
     end
     def method_missing meth, *args
-      raise NoMethodError.new("Couldn't find parameter: #{meth}") unless request.path_info[meth]
-      request.path_info[meth]
+      @params ||= {}
+      return request.path_info[meth] if request.path_info[meth]
+      return request.query[meth] if request.query[meth]
+      return @params[meth] if @params[meth]
+
+      raise NoMethodError.new("Couldn't find parameter: #{meth}")
+      #raise NoMethodError.new("Couldn't find parameter: #{meth}") unless request.path_info[meth]
+      #request.path_info[meth]
     end
   end
 end
