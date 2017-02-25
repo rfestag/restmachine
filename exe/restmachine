@@ -1,3 +1,9 @@
-require 'thor'
-require 'restmachine/cli'
+#!/usr/bin/env ruby
+#require 'thor'
+#require 'restmachine/cli'
+#require 'bundler/setup'
+require 'rubygems'
+require 'bundler'
+Bundler.require(:default)
+
 Restmachine::CLI.start ARGV
