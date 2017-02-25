@@ -1,0 +1,5 @@
+# Define your application routes here. 
+
+#login authenticator, LoginController
+#logout authenticator, LoginController
+#resource Order, authenticator: authenticator, controller: OrderController

@@ -1,9 +1,5 @@
 require 'thor'
-require 'restmachine'
 module Restmachine
-  class CLI < Thor
-    register(NewGenerator, "new", "new [NAME]", "Generate a new application")
-  end 
   module GemfileHelpers
     # Cleans up a Gemfile by inserting missing newlines between gem statements
     # Fixes old 'bug', where gem statements would be inserted into Gemfile without newlines

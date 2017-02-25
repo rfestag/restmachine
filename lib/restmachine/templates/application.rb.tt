@@ -1,0 +1,11 @@
+require 'restmachine'
+<%= appname %> = Webmachine::Application.new do |app|
+  instance_eval File.read('config/authentication.rb'), 'config/authentication.rb'
+  app.configure do |config|
+    instance_eval File.read('config/config.rb'), 'config/config.rb' 
+  end
+  app.routes do
+    instance_eval File.read('config/routes.rb'), 'config/routes.rb' 
+  end
+end
+<%= appname %>.run

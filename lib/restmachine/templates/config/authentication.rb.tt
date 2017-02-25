@@ -1,0 +1,5 @@
+key = OpenSSL::PKey::EC.new 'prime256v1'
+key.generate_key
+authenticator = Restmachine::Authenticator::JWTCookie.new secret: key do |credential|
+#  credential ? User.find(credential['id']) : nil
+end
