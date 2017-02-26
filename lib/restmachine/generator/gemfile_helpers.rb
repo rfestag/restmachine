@@ -8,7 +8,7 @@ module Restmachine
     # cleanup_gemfile    
     def cleanup_gemfile
       # add newline between each gem statement in Gemfile
-      gsub_file gemfile, /('|")gem/, "\1\ngem"      
+      gsub_file gemfile, /('|")gem/, "\\1\ngem"      
     end
 
     # Determine if there is a gem statement in a text for a certain gem

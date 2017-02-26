@@ -13,4 +13,6 @@ instance_eval File.read('config/database.rb'), 'config/database.rb'
     instance_eval File.read('config/routes.rb'), 'config/routes.rb' 
   end
 end
+<%- if options[:adapter] != 'rack' -%>
 <%= appname %>.run
+<%- end -%>
