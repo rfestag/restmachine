@@ -37,7 +37,7 @@ module Restmachine
       when 'mongo'
         @dbgem = 'mongoid'
         @dbgem_version = '~> 6.1.0'
-        template 'mongoid.yaml.erb', "#{name}/config/mongoid.yml"
+        template 'mongoid.yaml.erb', "#{name}/config/mongoid.yaml"
       end
     end
     def copy_gemfile

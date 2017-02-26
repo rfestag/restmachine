@@ -4,7 +4,7 @@ require 'restmachine/cli'
 
 if File.exist? 'Gemfile'
   require 'rubygems'
-  require 'bundler'
+  require 'bundler/setup'
   Bundler.require(:default)
 end
 

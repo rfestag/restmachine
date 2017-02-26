@@ -1,8 +1,13 @@
-require 'restmachine'
+require 'rubygems'
+require 'bundler/setup'
+Bundler.require(:default)
+
+instance_eval File.read('config/database.rb'), 'config/database.rb'
+
 <%= appname %> = Webmachine::Application.new do |app|
   instance_eval File.read('config/authentication.rb'), 'config/authentication.rb'
   app.configure do |config|
-    instance_eval File.read('config/config.rb'), 'config/config.rb' 
+    instance_eval File.read('config/adapter.rb'), 'config/adapter.rb' 
   end
   app.routes do
     instance_eval File.read('config/routes.rb'), 'config/routes.rb' 
