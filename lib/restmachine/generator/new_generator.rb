@@ -18,27 +18,30 @@ module Restmachine
     end
     def copy_application_rb
       self.appname = name.classify
-      template 'application.rb.tt', "#{name}/application.rb"
+      template 'application.rb.erb', "#{name}/application.rb"
     end
     def copy_authentication_rb
-      template 'config/authentication.rb.tt', "#{name}/config/authentication.rb"
+      template 'config/authentication.rb.erb', "#{name}/config/authentication.rb"
     end
-    def copy_config_rb
-      template 'config/config.rb.tt', "#{name}/config/config.rb"
+    def copy_adapter
+      template 'config/adapter.rb.erb', "#{name}/config/adapter.rb"
+    end
+    def copy_adapter
+      template 'config/database.rb.erb', "#{name}/config/database.rb"
     end
     def copy_routes_rb
-      template 'config/routes.rb.tt', "#{name}/config/routes.rb"
+      template 'config/routes.rb.erb', "#{name}/config/routes.rb"
     end
     def copy_database_config
       case options[:database]
       when 'mongo'
         @dbgem = 'mongoid'
         @dbgem_version = '~> 6.1.0'
-        template 'mongoid.yaml.tt', "#{name}/config/mongoid.yml"
+        template 'mongoid.yaml.erb', "#{name}/config/mongoid.yml"
       end
     end
     def copy_gemfile
-      template 'Gemfile.tt', "#{name}/Gemfile"
+      template 'Gemfile.erb', "#{name}/Gemfile"
     end
     def run_bundle_install 
       cleanup_gemfile
