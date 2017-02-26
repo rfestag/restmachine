@@ -15,7 +15,9 @@ module Restmachine
     source_root File.expand_path("../../templates", __FILE__)
 
     def creating_directory
-      empty_directory name
+      empty_directory "#{name}/app/controllers"
+      empty_directory "#{name}/app/models"
+      empty_directory "#{name}/app/policies"
       destination_root = name
     end
     def copy_gemfile

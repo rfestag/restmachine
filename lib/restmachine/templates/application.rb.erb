@@ -1,9 +1,23 @@
+#Load Gem dependencies
 require 'rubygems'
 require 'bundler/setup'
 Bundler.require(:default)
 
+#Prepare database connections
 instance_eval File.read('config/database.rb'), 'config/database.rb'
 
+#Load application code
+require 'active_support/dependencies'
+relative_load_paths - %w[app/controllers app/models app/policies]
+ActiveSupport::Dependencies.autoload_paths += relative_load_paths
+
+#Enable ActionView templates
+Webmachine::ActionView.configure do |config|
+  config.view_paths = ['views/']
+  config.handlers = [:erb, :haml, :builder]
+end
+
+#Create application
 <%= appname %> = Webmachine::Application.new do |app|
   instance_eval File.read('config/authentication.rb'), 'config/authentication.rb'
   app.configure do |config|
@@ -14,5 +28,7 @@ instance_eval File.read('config/database.rb'), 'config/database.rb'
   end
 end
 <%- if options[:adapter] != 'rack' -%>
+
+#Start application
 <%= appname %>.run
 <%- end -%>
