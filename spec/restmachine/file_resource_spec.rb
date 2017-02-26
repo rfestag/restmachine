@@ -16,7 +16,9 @@ describe Restmachine::FileResource do
       expect(response.code).to eq(404)
     end
     it 'should return 403 if the application server does not have permission to read the file' do
+      File.chmod 0000, 'spec/public/bad_perms'
       get '/bad_perms'
+      File.chmod 0644, 'spec/public/bad_perms'
       expect(response.code).to eq(403)
     end
   end
