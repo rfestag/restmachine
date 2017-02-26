@@ -21,21 +21,20 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "bundler", "~> 1.11"
   spec.add_development_dependency "rake", "~> 10.0"
   spec.add_development_dependency "rspec", "~> 3.0"
-  spec.add_development_dependency 'mongoid', '~> 5.1'
+  spec.add_development_dependency 'mongoid', '~> 6.1'
   spec.add_development_dependency 'webmachine-test', '~> 0.4'
   spec.add_development_dependency 'simplecov', '~> 0.11'
   spec.add_development_dependency 'reel', "~> 0.6"
   spec.add_development_dependency 'pry'
   spec.add_dependency "webmachine", "~> 1.4"
-  spec.add_dependency "rack"
-  spec.add_dependency "webmachine-actionview", "~> 0.0"
+  spec.add_dependency "rack", "~> 2.0"
+  spec.add_dependency "webmachine-actionview", "~> 0.0.1"
   spec.add_dependency "jwt", "~> 1.5"
-  spec.add_dependency "activesupport", "~> 4.2"
+  spec.add_dependency "activesupport", "~> 5.0.1"
   spec.add_dependency "pundit", "~> 1.1"
-  spec.add_dependency "mimemagic"
+  spec.add_dependency "mimemagic", "~> 0.3.2"
   spec.add_dependency "thor"
   spec.add_dependency "treetop"
   spec.add_dependency "seconds"
   spec.add_dependency "dry-validation"
-  #spec.add_dependency "strong_parameters"
 end

@@ -134,7 +134,17 @@ module Restmachine
 
       tempfile = lambda { |filename, content_type| Tempfile.new(["RestmachineMultipart", ::File.extname(filename)]) }
       bufsize = 16384
-      @params = Rack::Multipart::Parser.new(boundary, body, content_length, {}, tempfile, bufsize).parse
+      qp = Rack::QueryParser.make_default(65536, 100)
+      parser = Rack::Multipart::Parser.new(boundary, tempfile, bufsize, qp)
+      parser.on_read body.read(bufsize), body.eof?
+
+      loop do
+        break if parser.state == :DONE
+        parser.on_read body.read(bufsize), body.eof?
+      end
+      @params = parser.result.to_h[:params]
+
+      #@params = Rack::Multipart::Parser.new(boundary, body, content_length, {}, tempfile, bufsize).parse
       @parsed_params = true
       raise Restmachine::XSRFValidityError.new("Could not confirm authenticity of request") unless xsrf_valid?
       handle_request if respond_to? :handle_request

@@ -8,7 +8,7 @@ module Restmachine
     # cleanup_gemfile    
     def cleanup_gemfile
       # add newline between each gem statement in Gemfile
-      gsub_file 'Gemfile', /('|")gem/, "\1\ngem"      
+      gsub_file gemfile, /('|")gem/, "\1\ngem"      
     end
 
     # Determine if there is a gem statement in a text for a certain gem
@@ -29,16 +29,6 @@ module Restmachine
       end      
     end
 
-    # Determine if a certain plugin is installed in its appropriate location
-    # ==== Parameters
-    # plugin_name<String>:: plugin name
-    # ==== Examples
-    #
-    # has_plugin? 'paginator' 
-    def has_plugin?(plugin_name) 
-      File.directory?(File.join(Rails.root, "vendor/plugins/#{plugin_name}"))
-    end
-
     # Quick helper for adding a single gem statement to the Gemfile
     # ==== Parameters
     # gem_name<String>:: gem name
@@ -50,7 +40,7 @@ module Restmachine
     def add_gem(gem_name, gem_version = nil)
       if !has_gem?(gemfile_txt, gem_name) 
         gem_version_str = gem_version ? ", '#{gem_version}'" : '' 
-        append_line_to_file 'Gemfile', "gem '#{gem_name}'#{gem_version_str}"  
+        append_to_file gemfile, "gem '#{gem_name}'#{gem_version_str}"  
       end
     end
 
@@ -67,7 +57,10 @@ module Restmachine
 
     # Loads and caches the current Gemfile content
     def gemfile_txt
-      @gemfile_txt ||= File.open('Gemfile').read        
+      @gemfile_txt ||= File.open(gemfile).read        
     end 
+    def gemfile
+      @gemfile = "#{name}/Gemfile"
+    end
   end
 end

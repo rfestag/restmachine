@@ -5,8 +5,9 @@ module Restmachine
     include Thor::Actions
     include GemfileHelpers
 
-    attr_accessor :appname 
+    attr_accessor :appname, :dbgem, :dbgem_version
     argument :name
+    class_option :database, default: 'mongo'
     desc "Generates new application"
 
     source_root File.expand_path("../../templates", __FILE__)
@@ -28,14 +29,22 @@ module Restmachine
     def copy_routes_rb
       template 'config/routes.rb.tt', "#{name}/config/routes.rb"
     end
+    def copy_database_config
+      case options[:database]
+      when 'mongo'
+        @dbgem = 'mongoid'
+        @dbgem_version = '~> 6.1.0'
+        template 'mongoid.yaml.tt', "#{name}/config/mongoid.yml"
+      end
+    end
     def copy_gemfile
       template 'Gemfile.tt', "#{name}/Gemfile"
     end
     def run_bundle_install 
+      cleanup_gemfile
       inside name do
         run 'bundle install'
       end
-      #run "cd #{name}; bundle install"
     end
   end
 end

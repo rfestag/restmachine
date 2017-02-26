@@ -1,7 +1,7 @@
 production:
   clients:
     default:
-      database: restmachine
+      database: <%= name %>
       hosts:
         - localhost:27017
   options:
