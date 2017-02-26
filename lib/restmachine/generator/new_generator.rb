@@ -9,6 +9,7 @@ module Restmachine
     argument :name
     class_option :database, default: 'mongo'
     class_option :adapter, default: 'reel'
+    class_option :gemsource, default: 'https://rubygems.org'
     desc "Generates new application"
 
     source_root File.expand_path("../../templates", __FILE__)
