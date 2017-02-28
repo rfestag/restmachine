@@ -3,15 +3,11 @@ require 'active_support/inflector'
 module Restmachine
   module Extensions
     module Dispatcher
-=begin
-      def assets *dirs, path: "/assets/*"
-        sprockets = Sprockets::Environment.new
-        dirs = dirs.flatten
-        dirs.flatten.each {|p| sprockets.append_path p}
-        resource = Webmachine::Sprockets.resource_for(sprockets)
-        add path, resource
+      def assets root, *args, sources: %w(javascripts stylesheets images), path: "/assets/", authenticator: nil, &block
+        opts = {sources: sources, path: path, authenticator: authenticator}
+        resource = Restmachine::SprocketsResource.create(root, opts)
+        add "#{path}*", resource, *args, &block
       end
-=end
       def files dir, *args, path: '/*', authenticator: nil, &block
         opts = {authenticator: authenticator}
         resource = Restmachine::FileResource.create(dir, opts)

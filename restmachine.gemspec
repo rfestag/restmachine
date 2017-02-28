@@ -28,8 +28,8 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'pry'
   spec.add_dependency "webmachine", "~> 1.4"
   spec.add_dependency "webmachine-actionview", "~> 0.0"
-#  spec.add_dependency "webmachine-sprockets", "~> 0.2"
   spec.add_dependency "rack", "~> 2.0"
+  spec.add_dependency "sprockets", "~> 3.0"
   spec.add_dependency "jwt", "~> 1.5"
   spec.add_dependency "activesupport", "~> 5.0"
   spec.add_dependency "pundit", "~> 1.1"
