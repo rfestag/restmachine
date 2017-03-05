@@ -3,8 +3,8 @@ require 'active_support/inflector'
 module Restmachine
   module Extensions
     module Dispatcher
-      def assets root, *args, sources: %w(javascripts stylesheets images), path: "/assets/", authenticator: nil, &block
-        opts = {sources: sources, path: path, authenticator: authenticator}
+      def assets root, *args, sources: %w(javascripts stylesheets images), path: "/assets/", authenticator: nil, js_compressor: nil, css_compressor: nil, &block
+        opts = {sources: sources, path: path, authenticator: authenticator, js_compressor: js_compressor, css_compressor: css_compressor}
         resource = Restmachine::SprocketsResource.create(root, opts)
         add "#{path}*", resource, *args, &block
       end
@@ -19,8 +19,10 @@ module Restmachine
         opts = {path: path, controller: controller, authenticator: authenticator}
         collection = Restmachine::Resource::Collection.create(model, opts) 
         item = Restmachine::Resource::Item.create(model, opts)
+        action = Restmachine::Resource::Action.create(model, opts)
         add "#{path}.?:format?", collection, *args, &block 
         add "#{path}/:id.?:format?", item, *args, &block
+        add "#{path}/:id/:action.?:format?", action, *args, &block
       end
       def login authenticator, controller, *args, path: nil, &block
         path ||= "/login"

@@ -14,7 +14,12 @@ module Pundit
     else
       "schema"
     end
-    policy.public_send(method_name).call(record)
+    if policy.respond_to? method_name
+      validator = policy.public_send(method_name)
+      validator ? validator.call(record) : nil
+    else
+      nil
+    end
   end
 
   # Returns a scope that automatically adds a 'select' clause to limit the fields

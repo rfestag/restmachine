@@ -7,11 +7,26 @@ Webmachine::ActionView.configure do |config|
   config.handlers = [:erb, :haml, :builder]
 end
 class PersonPolicy < Restmachine::ApplicationPolicy; 
+  def not_allowed?
+    false
+  end
+  def action?
+    true
+  end
+  def iaction?
+    true
+  end
   def schema
     Dry::Validation.Form do
       required(:name).filled(:str?)
       required(:age).filled(:int?, gt?: 18)
     end
+  end
+  def schema_for_action
+    nil
+  end
+  def schema_for_iaction
+    nil
   end
 end
 class Person
@@ -23,6 +38,27 @@ class Person
     id
   end
 end
+module PeopleController
+  module ClassMethods
+    def action
+      {result: true}
+    end
+    def not_allowed
+    end
+    def no_policy
+    end
+  end
+  def iaction
+    {result: true}
+  end
+  def inot_allowed
+  end
+  def ino_policy
+  end
+  def self.included(base)
+    base.extend(ClassMethods)
+  end
+end
 
 BaseApp = Webmachine::Application.new do |app|
   key = OpenSSL::PKey::EC.new 'prime256v1'
@@ -32,6 +68,6 @@ BaseApp = Webmachine::Application.new do |app|
   end
 
   app.routes do
-    resource Person, authenticator: authenticator
+    resource Person, authenticator: authenticator, controller: PeopleController
   end
 end

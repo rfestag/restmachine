@@ -80,7 +80,8 @@ module Restmachine
     def content_types_accepted
       @content_types_accepted = [["application/json", :from_json],
        ["application/x-www-form-url-encoded", :from_form],
-       ["multipart/form-data", :from_multipart]]
+       ["multipart/form-data", :from_multipart],
+       ["*/*", :from_unknown]]
     end
     def delete_resource
       raise Restmachine::XSRFValidityError.new("Could not confirm authenticity of request") unless xsrf_valid?
@@ -117,7 +118,7 @@ module Restmachine
     end
     def from_form
       @params = request.parse_nested_query(request.body.to_s)
-      @parse_params = true
+      @parsed_params = true
       raise Restmachine::XSRFValidityError.new("Could not confirm authenticity of request") unless xsrf_valid?
       handle_request if respond_to? :handle_request
     rescue Rack::Utils::ParameterTypeError => e
@@ -155,6 +156,12 @@ module Restmachine
       @errors << e.message
       403
     end
+    def from_unknown
+      @params = {}
+      @parsed_params = true
+      raise Restmachine::XSRFValidityError.new("Could not confirm authenticity of request") unless xsrf_valid?
+      handle_request if respond_to? :handle_request
+    end
     def options
       if allow_cors
         {'Access-Control-Allow-Origin' => allowed_origins.join(","),
@@ -179,7 +186,7 @@ module Restmachine
       #TODO: Use the exception to build body/headers
     end
     def handle_exception(e)
-      puts e.message
+      puts "#{e.class}: #{e.message}"
       puts e.backtrace.join("\n")
     end
     def finish_request

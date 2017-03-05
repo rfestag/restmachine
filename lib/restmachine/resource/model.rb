@@ -13,6 +13,33 @@ module Restmachine
           def initialize
             super()
           end
+
+          #Before going any further, programmatically determine exposed methods
+          #and define an accessor for it
+          my_methods = (defined? controller::ClassMethods) ?  controller::ClassMethods.instance_methods(false) : []
+          ci = ancestors.index(Controller)
+          ancestor_methods = ancestors[ci..-1].reduce(Set.new) do |methods, ancestor|
+            methods |= ancestor.instance_methods(false)
+          end
+          collection_methods = my_methods - ancestor_methods.to_a
+
+          define_method :collection_methods do
+            collection_methods
+          end
+
+          #Before going any further, programmatically determine exposed methods
+          #and define an accessor for it
+          my_methods = controller.instance_methods(false)
+          ci = ancestors.index(Controller)
+          ancestor_methods = ancestors[ci..-1].reduce(Set.new) do |methods, ancestor|
+            methods |= ancestor.instance_methods(false)
+          end
+          item_methods = my_methods - ancestor_methods.to_a
+
+          define_method :item_methods do
+            item_methods
+          end
+
           define_method :authenticator do
             authenticator
           end

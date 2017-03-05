@@ -9,6 +9,62 @@ describe Restmachine::Resource do
     Person.delete_all
   end
 
+  describe 'Custom actions' do
+    it 'returns 200 when calling a supported "class" action' do
+      header 'Accept', 'application/json'
+      protect_from_forgery
+      post '/people/action'
+      expect(response.code).to eq(200)
+      expect(response.headers['Content-Type']).to eq('application/json')
+    end
+    it 'returns 404 when the "class" action is undefined' do
+      header 'Accept', 'application/json'
+      protect_from_forgery
+      post '/people/no_action'
+      expect(response.code).to eq(404)
+    end
+    it 'returns 403 when the "class" action is defined, but user does not have permission' do
+      header 'Accept', 'application/json'
+      protect_from_forgery
+      post '/people/not_allowed'
+      expect(response.code).to eq(403)
+    end
+    it 'returns 403 when the "class" action is defined, but no policy is defined for it' do
+      header 'Accept', 'application/json'
+      protect_from_forgery
+      post '/people/no_policy'
+      expect(response.code).to eq(403)
+    end
+    it 'returns 200 when calling a supported "instance" action' do
+      person = Person.create({name: 'name', age: 21})
+      header 'Accept', 'application/json'
+      protect_from_forgery
+      post "/people/#{person.id}/iaction"
+      expect(response.code).to eq(200)
+      expect(response.headers['Content-Type']).to eq('application/json')
+    end
+    it 'returns 404 when the "instance" action is undefined' do
+      person = Person.create({name: 'name', age: 21})
+      header 'Accept', 'application/json'
+      protect_from_forgery
+      post "/people/#{person.id}/ino_action"
+      expect(response.code).to eq(404)
+    end
+    it 'returns 403 when the "instance" action is defined, but user does not have permission' do
+      person = Person.create({name: 'name', age: 21})
+      header 'Accept', 'application/json'
+      protect_from_forgery
+      post "/people/#{person.id}/inot_allowed"
+      expect(response.code).to eq(403)
+    end
+    it 'returns 403 when the "instance" action is defined, but no policy is defined for it' do
+      person = Person.create({name: 'name', age: 21})
+      header 'Accept', 'application/json'
+      protect_from_forgery
+      post "/people/#{person.id}/ino_policy"
+      expect(response.code).to eq(403)
+    end
+  end
   describe 'Object Lifecycle' do
     it 'lists all visible objects' do
       person = Person.create({name: 'person1', age: 21})

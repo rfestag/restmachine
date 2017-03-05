@@ -1,6 +1,8 @@
 module Restmachine
   module Resource
     module Controller
+      module ClassMethods
+      end
       def list
         model.all
       end
@@ -16,6 +18,9 @@ module Restmachine
       def delete
         resource.destroy
         204
+      end
+      def self.included(base)
+        base.extend(ClassMethods)
       end
     end
   end
