@@ -18,6 +18,7 @@ module Restmachine
       empty_directory "#{name}/app/controllers"
       empty_directory "#{name}/app/models"
       empty_directory "#{name}/app/policies"
+      empty_directory "#{name}/app/schemas"
       destination_root = name
     end
     def copy_gemfile

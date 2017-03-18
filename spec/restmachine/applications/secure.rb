@@ -1,9 +1,10 @@
 require './spec/restmachine/applications/base.rb'
-class OrderPolicy < Restmachine::ApplicationPolicy; 
+OrderSchema = Dry::Validation.Form(Restmachine::ApplicationSchema) do
+  required(:items).filled(:array?)
+end
+class OrderPolicy < Restmachine::ApplicationPolicy 
   def schema
-    Dry::Validation.Form do
-      required(:items).filled(:array?)
-    end
+    OrderSchema
   end
   def create?
     !user.nil?

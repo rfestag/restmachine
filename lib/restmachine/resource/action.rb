@@ -40,8 +40,8 @@ module Restmachine
       end
       def handle_request
         attributes = validated_attributes(params, resource, @action)
-        if attributes.respond_to? :messages
-          if attributes.messages.length == 0
+        if attributes.respond_to? :success?
+          if attributes.success?
             attributes == nil ? send(@action) : send(@action, attributes.to_h)
             generate_post_response
             true

@@ -26,8 +26,8 @@ module Restmachine
       def handle_request
         if post_is_create? and request.post?
           attributes = validated_attributes(params, model, :create)
-          if attributes.respond_to? :messages 
-            if attributes.messages.length == 0
+          if attributes.respond_to? :success? 
+            if attributes.success?
               resource = create attributes.to_h
               @create_path = "#{path}/#{resource.uri}"
               response.headers['Location'] = @create_path

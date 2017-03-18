@@ -8,7 +8,7 @@ instance_eval File.read('config/database.rb'), 'config/database.rb'
 
 #Load application code
 require 'active_support/dependencies'
-relative_load_paths - %w[app/controllers app/models app/policies]
+relative_load_paths - %w[app/controllers app/models app/policies app/schemas]
 ActiveSupport::Dependencies.autoload_paths += relative_load_paths
 
 #Enable ActionView templates
