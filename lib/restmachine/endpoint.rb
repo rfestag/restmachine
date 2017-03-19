@@ -50,9 +50,16 @@ module Restmachine
     end
     def generate_post_response 
       types = content_types_provided.map {|pair| pair.first }
-      content_type = choose_media_type(types, request.accept)
-      handler = content_types_provided.find{|ct, _| content_type.type_matches?(Webmachine::MediaType.parse(ct)) }.last
-      response.headers['Content-Type'] = content_type.type
+      content_type = choose_media_type(types, request.accept || mime_extension_type)
+      if content_type
+        handler = content_types_provided.find{|ct, _| content_type.type_matches?(Webmachine::MediaType.parse(ct)) }.last
+        type = content_type.type
+      else
+        puts "Making up a content type"
+        handler = content_types_provided.first.last
+        type = content_types_provided.first.first
+      end
+      response.headers['Content-Type'] = type
       response.body = send(handler)
       [content_type, send(handler)]
     end
@@ -68,14 +75,15 @@ module Restmachine
       [["application/json", :to_json],
        ["text/html", :to_html]]
     end
-    def content_types_provided
+    def mime_extension_type
+      return @mime_extension_type if @mime_extension_type
       format = request.path_info[:format]
-      @content_types_provided ||= if format
-        type = MimeMagic.by_extension(format).type
-        [[type, "to_#{format}".to_sym]]
-      else
-        default_format
-      end
+      @mime_extension_type = format ? MimeMagic.by_extension(format).type : nil
+    end
+    def content_types_provided
+      return @content_types_provided if @content_types_provided
+      mime_type = mime_extension_type
+      @content_types_provided = mime_type ? [[mime_type, "to_#{request.path_info[:format]}".to_sym]] : default_format
     end
     def content_types_accepted
       @content_types_accepted = [["application/json", :from_json],
@@ -89,12 +97,17 @@ module Restmachine
       true
     rescue Restmachine::XSRFValidityError => e
       @errors << e.message
+      generate_post_response
       403
     end
     def xsrf_valid?
       origin = request.headers['Origin']
-      valid_origin = server_origins.include?(origin)
-      valid_origin ||= allowed_origins.include?(origin) and allow_cors
+      if origin
+        valid_origin = server_origins.include?(origin)
+        valid_origin ||= allowed_origins.include?(origin) and allow_cors
+      else
+        valid_origin = true
+      end
       authenticity_token = request.headers['X-XSRF-TOKEN'] || params['authenticity_token']
       #puts "#{authenticity_token} == #{xsrf_token}"
       if verify_xsrf
@@ -104,6 +117,7 @@ module Restmachine
       end
     end
     def from_json
+      puts "From json"
       #We do this so that we always make params into an object, and only try to parse once
       @params = JSON.parse(request.body.to_s) unless @parsed_params
       @parsed_params = true
@@ -111,21 +125,26 @@ module Restmachine
       handle_request if respond_to? :handle_request
     rescue JSON::ParserError => e
       @errors << e.message
+      generate_post_response
       400
     rescue Restmachine::XSRFValidityError => e
       @errors << e.message
+      generate_post_response
       403
     end
     def from_form
       @params = request.parse_nested_query(request.body.to_s)
+      puts [request.body.to_s,@params].to_s
       @parsed_params = true
       raise Restmachine::XSRFValidityError.new("Could not confirm authenticity of request") unless xsrf_valid?
       handle_request if respond_to? :handle_request
     rescue Rack::Utils::ParameterTypeError => e
       @errors << e.message
+      generate_post_response
       400
     rescue Restmachine::XSRFValidityError => e
       @errors << e.message
+      generate_post_response
       403
     end
     def from_multipart
@@ -151,9 +170,11 @@ module Restmachine
       handle_request if respond_to? :handle_request
     rescue EOFError => e
       @errors << e.message
+      generate_post_response
       400
     rescue Restmachine::XSRFValidityError => e
       @errors << e.message
+      generate_post_response
       403
     end
     def from_unknown
@@ -161,6 +182,10 @@ module Restmachine
       @parsed_params = true
       raise Restmachine::XSRFValidityError.new("Could not confirm authenticity of request") unless xsrf_valid?
       handle_request if respond_to? :handle_request
+    rescue Restmachine::XSRFValidityError => e
+      @errors << e.message
+      generate_post_response
+      403
     end
     def options
       if allow_cors

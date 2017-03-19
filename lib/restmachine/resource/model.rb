@@ -29,12 +29,16 @@ module Restmachine
 
           #Before going any further, programmatically determine exposed methods
           #and define an accessor for it
-          my_methods = controller.instance_methods(false)
-          ci = ancestors.index(Controller)
-          ancestor_methods = ancestors[ci..-1].reduce(Set.new) do |methods, ancestor|
-            methods |= ancestor.instance_methods(false)
+          if controller
+            my_methods = controller.instance_methods(false)
+            ci = ancestors.index(Controller)
+            ancestor_methods = ancestors[ci..-1].reduce(Set.new) do |methods, ancestor|
+              methods |= ancestor.instance_methods(false)
+            end
+            item_methods = my_methods - ancestor_methods.to_a
+          else
+            item_methods = []
           end
-          item_methods = my_methods - ancestor_methods.to_a
 
           define_method :item_methods do
             item_methods
