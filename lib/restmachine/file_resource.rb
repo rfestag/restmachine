@@ -24,6 +24,7 @@ module Restmachine
       [['*/*', :to_file]]
     end
     def resource_exists?
+      @target += "/index.html" if File.directory? target
       @exists ||= File.exists? target
     end
     def target
