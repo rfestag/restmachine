@@ -13,6 +13,7 @@ module Restmachine
           def initialize
             super()
           end
+          pluralized_name = model.name.pluralize.underscore
 
           #Before going any further, programmatically determine exposed methods
           #and define an accessor for it
@@ -57,6 +58,9 @@ module Restmachine
           end
           define_method :model do
             model
+          end
+          define_method :pluralized_name do
+            pluralized_name
           end
         end
       end

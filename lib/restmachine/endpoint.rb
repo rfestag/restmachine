@@ -55,7 +55,6 @@ module Restmachine
         handler = content_types_provided.find{|ct, _| content_type.type_matches?(Webmachine::MediaType.parse(ct)) }.last
         type = content_type.type
       else
-        puts "Making up a content type"
         handler = content_types_provided.first.last
         type = content_types_provided.first.first
       end
@@ -117,7 +116,6 @@ module Restmachine
       end
     end
     def from_json
-      puts "From json"
       #We do this so that we always make params into an object, and only try to parse once
       @params = JSON.parse(request.body.to_s) unless @parsed_params
       @parsed_params = true
@@ -134,7 +132,6 @@ module Restmachine
     end
     def from_form
       @params = request.parse_nested_query(request.body.to_s)
-      puts [request.body.to_s,@params].to_s
       @parsed_params = true
       raise Restmachine::XSRFValidityError.new("Could not confirm authenticity of request") unless xsrf_valid?
       handle_request if respond_to? :handle_request

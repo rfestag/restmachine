@@ -57,7 +57,12 @@ module Restmachine
       def to_html
         @resources = policy_scope(list)
         @errors = errors
-        render template: "#{model.name.pluralize.underscore}"
+        if errors
+          response.headers['Location'] = request.headers['Referrer']
+          nil
+        else
+          render template: "#{pluralized_name}/index.html"
+        end
       end
       def next_id
         @next_id = BSON::ObjectId.new

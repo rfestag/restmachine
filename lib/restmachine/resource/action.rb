@@ -67,7 +67,11 @@ module Restmachine
       def to_html
         @resource = resource
         @errors = errors
-        render
+        if errors
+          response.headers['Location'] = request.headers['Referrer'] if @errors
+        else
+          render template: "#{pluralized_name}/#{@action}.html"
+        end
       end
       def resource_exists?
         resource

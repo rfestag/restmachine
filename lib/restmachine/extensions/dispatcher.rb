@@ -19,9 +19,13 @@ module Restmachine
         opts = {path: path, controller: controller, authenticator: authenticator}
         collection = Restmachine::Resource::Collection.create(model, opts) 
         item = Restmachine::Resource::Item.create(model, opts)
+        new = Restmachine::Resource::New.create(model, opts)
+        edit = Restmachine::Resource::Edit.create(model, opts)
         action = Restmachine::Resource::Action.create(model, opts)
         add "#{path}.?:format?", collection, *args, &block 
+        add "#{path}/new.?:format?", new, *args, &block 
         add "#{path}/:id.?:format?", item, *args, &block
+        add "#{path}/:id/edit.?:format?", edit, *args, &block
         add "#{path}/:id/:action.?:format?", action, *args, &block
       end
       def login authenticator, controller, *args, path: nil, &block

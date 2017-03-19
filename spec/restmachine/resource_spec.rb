@@ -65,6 +65,30 @@ describe Restmachine::Resource do
       expect(response.code).to eq(403)
     end
   end
+  describe 'HTML Object Lifecycle' do
+    it 'invalid create bounces back to referrer' do
+      #Create invalid object
+      header 'Accept', 'text/html'
+      header 'Content-Type', 'application/json'
+      header 'Referrer', 'http://localhost/people/new.html'
+      protect_from_forgery
+      body({name: 'name', age: 18}.to_json)
+      post '/people'
+      expect(response.code).to eq(422)
+      expect(response.headers['Location']).to eq('http://localhost/people/new.html')
+    end
+    it 'invalid update bounces back to referrer' do
+      person = Person.create({name: 'name', age: 21})
+      header 'Accept', 'text/html'
+      header 'Content-Type', 'application/json'
+      header 'Referrer', 'http://localhost/people/edit.html'
+      protect_from_forgery
+      body({name: 'name', age: 17}.to_json)
+      put "/people/#{person.id}"
+      expect(response.code).to eq(422)
+      expect(response.headers['Location']).to eq('http://localhost/people/edit.html')
+    end
+  end
   describe 'Object Lifecycle' do
     it 'lists all visible objects' do
       person = Person.create({name: 'person1', age: 21})
