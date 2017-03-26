@@ -28,6 +28,12 @@ module Restmachine
         add "#{path}/:id/edit.?:format?", edit, *args, &block
         add "#{path}/:id/:action.?:format?", action, *args, &block
       end
+      def oauth2 authenticator, provider, controller=nil, *args, path: nil, app_id: nil, secret: nil, redirect_to: '/', &block
+        path ||= "/oauth2/#{provider.name.split('::').last.slugify}/callback"
+        puts "waiting for #{path}"
+        opts = {app_id: app_id, secret: secret, redirect_to: redirect_to}
+        add path, Restmachine::OAuth::Callback.create(authenticator, provider, controller, opts), *args, &block
+      end
       def login authenticator, controller, *args, path: nil, &block
         path ||= "/login"
         opts = {path: path, controller: controller}

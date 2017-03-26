@@ -3,6 +3,7 @@ base_path = File.expand_path(File.dirname(__FILE__))
 Treetop.load(File.join(base_path, 'restmachine', 'grammar', 'restmachine_path.treetop'))
 
 require 'time'
+require 'oauth2'
 require 'dry-validation'
 require "restmachine/version"
 require 'webmachine'
@@ -23,6 +24,8 @@ require 'restmachine/authenticator/jwt_cookie'
 require 'restmachine/session/session_endpoint'
 require 'restmachine/session/login'
 require 'restmachine/session/logout'
+require 'restmachine/oauth/oauth_endpoint'
+require 'restmachine/oauth/facebook'
 require 'restmachine/resource/controller'
 require 'restmachine/resource/model'
 require 'restmachine/resource/item'

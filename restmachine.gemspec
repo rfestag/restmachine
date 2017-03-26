@@ -30,6 +30,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "dry-validation"
   spec.add_dependency "jwt", "~> 1.5"
   spec.add_dependency "mimemagic", "~> 0.3"
+  spec.add_dependency "oauth2", "~> 1.3"
   spec.add_dependency "pundit", "~> 1.1"
   spec.add_dependency "rack", "~> 2.0"
   spec.add_dependency "seconds"
