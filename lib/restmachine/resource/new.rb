@@ -6,7 +6,8 @@ module Restmachine
         %w(OPTIONS GET)
       end
       def forbidden?
-        authorize(model, :create?)
+        authorize(model, :new?)
+        @action = 'new'
         return false
       #Occurs when user access to perform specified action on resource explicitly fails
       rescue Pundit::NotAuthorizedError => e
@@ -21,7 +22,7 @@ module Restmachine
         @resource = model.new
         @errors = errors
         response.headers['Location'] = request.headers['Referrer'] if @errors
-        render template: "#{pluralized_name}/new.html"
+        render template: "#{pluralized_name}/#{@action}.html"
       end
       def resource_exists?
         true

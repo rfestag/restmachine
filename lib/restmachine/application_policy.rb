@@ -8,8 +8,14 @@ module Restmachine
     def create?
       true
     end
+    def new?
+      create?
+    end
     def update?
       true
+    end
+    def edit?
+      update?
     end
     def delete?
       true

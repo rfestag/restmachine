@@ -26,7 +26,9 @@ class PersonPolicy < Restmachine::ApplicationPolicy;
     nil
   end
   def schema_for_iaction
-    nil
+    Dry::Validation.Form do
+      required(:id).filled(:str?)
+    end
   end
 end
 class Person
@@ -48,7 +50,7 @@ module PeopleController
     def no_policy
     end
   end
-  def iaction
+  def iaction params
     {result: true}
   end
   def inot_allowed

@@ -26,22 +26,15 @@ module Restmachine
       def handle_request
         if post_is_create? and request.post?
           attributes = validated_attributes(params, model, :create)
-          if attributes.respond_to? :success? 
-            if attributes.success?
-              resource = create attributes.to_h
-              @create_path = "#{path}/#{resource.uri}"
-              response.headers['Location'] = @create_path
-            else
-              response.headers.delete 'Location'
-              errors << attributes.messages
-              generate_post_response
-              422
-            end
-          else
-            puts "No validations provided, using raw params hash"
-            resource = create params
+          if attributes.success? || attributes.nil?
+            resource = create(attributes ? attributes.to_h : nil)
             @create_path = "#{path}/#{resource.uri}"
             response.headers['Location'] = @create_path
+          else
+            response.headers.delete 'Location'
+            errors << attributes.messages
+            generate_post_response
+            422
           end
         end
       end
@@ -57,11 +50,11 @@ module Restmachine
       def to_html
         @resources = policy_scope(list)
         @errors = errors
-        if errors
+        if errors.empty?
+          render template: "#{pluralized_name}/index.html"
+        else
           response.headers['Location'] = request.headers['Referrer']
           nil
-        else
-          render template: "#{pluralized_name}/index.html"
         end
       end
       def next_id

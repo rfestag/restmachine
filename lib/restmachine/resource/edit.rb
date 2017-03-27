@@ -6,7 +6,8 @@ module Restmachine
         %w(OPTIONS GET)
       end
       def forbidden?
-        authorize(model, :update?)
+        authorize(resource, :edit?)
+        @action = 'edit'
         return false
       #Occurs when user access to perform specified action on resource explicitly fails
       rescue Pundit::NotAuthorizedError => e

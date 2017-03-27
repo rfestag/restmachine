@@ -205,6 +205,8 @@ module Restmachine
       end
     end
     def handle_unauthorized e
+      errors << e.message
+      generate_post_response
       #TODO: Use the exception to build body/headers
     end
     def handle_exception(e)

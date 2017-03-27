@@ -64,24 +64,18 @@ module Restmachine
       end
       def handle_request
         attributes = validated_attributes(params, resource, @action)
-        if attributes.respond_to? :success?
-          if attributes.success?
-            if request.post?
-              attributes == nil ? self.class.send(@action) : self.class.send(@action, attributes.to_h)
-              generate_post_response
-              true
-            else
-              update attributes.to_h
-            end
-          else
-            errors << attributes.messages
+        if attributes.nil? || attributes.success?
+          if request.post?
+            attributes == nil ? self.class.send(@action) : self.class.send(@action, attributes.to_h)
             generate_post_response
-            422
+            true
+          else
+            update attributes.to_h
           end
         else
-          attributes == nil ? self.class.send(@action) : self.class.send(@action, attributes.to_h)
+          errors << attributes.messages
           generate_post_response
-          200
+          422
         end
       end
       def handle_delete

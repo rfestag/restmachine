@@ -41,4 +41,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "webmachine", "~> 1.4"
   spec.add_dependency "webmachine-actionview", "~> 0.0"
   spec.add_dependency "yui-compressor"
+  spec.add_dependency "bcrypt"
 end

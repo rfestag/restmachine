@@ -4,6 +4,7 @@ Treetop.load(File.join(base_path, 'restmachine', 'grammar', 'restmachine_path.tr
 
 require 'time'
 require 'oauth2'
+require 'bcrypt'
 require 'dry-validation'
 require "restmachine/version"
 require 'webmachine'

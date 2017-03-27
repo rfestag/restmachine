@@ -38,7 +38,9 @@ describe Restmachine::Resource do
     it 'returns 200 when calling a supported "instance" action' do
       person = Person.create({name: 'name', age: 21})
       header 'Accept', 'application/json'
+      header 'Content-Type', 'application/json'
       protect_from_forgery
+      body({id: 'bob'}.to_json)
       post "/people/#{person.id}/iaction"
       expect(response.code).to eq(200)
       expect(response.headers['Content-Type']).to eq('application/json')
@@ -64,6 +66,15 @@ describe Restmachine::Resource do
       post "/people/#{person.id}/ino_policy"
       expect(response.code).to eq(403)
     end
+    it 'returns 422 when the "instance" action parameters are invalid' do
+      person = Person.create({name: 'name', age: 21})
+      header 'Accept', 'application/json'
+      header 'Content-Type', 'application/json'
+      protect_from_forgery
+      body({id: ''}.to_json)
+      post "/people/#{person.id}/iaction"
+      expect(response.code).to eq(422)
+    end
   end
   describe 'HTML Object Lifecycle' do
     it 'invalid create bounces back to referrer' do
@@ -87,6 +98,32 @@ describe Restmachine::Resource do
       put "/people/#{person.id}"
       expect(response.code).to eq(422)
       expect(response.headers['Location']).to eq('http://localhost/people/edit.html')
+    end
+    it 'shows edit page' do
+      person = Person.create({name: 'name', age: 21})
+      header 'Accept', 'text/html'
+      header 'Content-Type', 'application/json'
+      body({name: 'name', age: 21}.to_json)
+      get "/people/#{person.id}/edit"
+      expect(response.code).to eq(200)
+    end
+    it 'shows new page' do
+      person = Person.create({name: 'name', age: 21})
+      header 'Accept', 'text/html'
+      header 'Content-Type', 'application/json'
+      get "/people/new"
+      expect(response.code).to eq(200)
+    end
+     it 'shows "action" page results' do
+      person = Person.create({name: 'name', age: 21})
+      header 'Accept', 'text/html'
+      header 'Content-Type', 'application/json'
+      protect_from_forgery
+      body({id: 'bob'}.to_json)
+      post "/people/#{person.id}/iaction"
+      puts response.inspect
+      expect(response.code).to eq(200)
+      expect(response.headers['Content-Type']).to eq('text/html')
     end
   end
   describe 'Object Lifecycle' do

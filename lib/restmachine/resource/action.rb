@@ -40,20 +40,14 @@ module Restmachine
       end
       def handle_request
         attributes = validated_attributes(params, resource, @action)
-        if attributes.respond_to? :success?
-          if attributes.success?
-            attributes == nil ? send(@action) : send(@action, attributes.to_h)
-            generate_post_response
-            true
-          else
-            errors << attributes.messages
-            generate_post_response
-            422
-          end
-        else
+        if attributes.success?
           attributes == nil ? send(@action) : send(@action, attributes.to_h)
           generate_post_response
-          200
+          true
+        else
+          errors << attributes.messages
+          generate_post_response
+          422
         end
       end
       def to_json
@@ -67,10 +61,10 @@ module Restmachine
       def to_html
         @resource = resource
         @errors = errors
-        if errors
-          response.headers['Location'] = request.headers['Referrer'] if @errors
-        else
+        if errors.empty?
           render template: "#{pluralized_name}/#{@action}.html"
+        else
+          response.headers['Location'] = request.headers['Referrer'] if @errors
         end
       end
       def resource_exists?
