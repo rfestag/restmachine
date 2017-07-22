@@ -24,5 +24,17 @@ describe Restmachine::Authenticator do
       decoded, = authenticator.decode_token token
       expect(decoded['data']).to eq('test')
     end
+    it 'should support no validation' do
+      credentials = {data: 'test'}
+      authenticator = Restmachine::Authenticator::JWT.new algorithm: 'none'
+      token = authenticator.encode_token credentials
+      puts token.inspect
+      decoded, = authenticator.decode_token token
+      expect(decoded['data']).to eq('test')
+    end
+    it 'should fail if invalid algorithm used' do
+      credentials = {data: 'test'}
+      expect{Restmachine::Authenticator::JWT.new algorithm: 'bob'}.to raise_error(Restmachine::Authenticator::InvalidAlgorithmError)
+    end
   end
 end

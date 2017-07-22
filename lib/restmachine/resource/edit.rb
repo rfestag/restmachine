@@ -5,18 +5,10 @@ module Restmachine
       def allowed_methods
         %w(OPTIONS GET)
       end
-      def forbidden?
+      def unauthorized?
         authorize(resource, :edit?)
         @action = 'edit'
         return false
-      #Occurs when user access to perform specified action on resource explicitly fails
-      rescue Pundit::NotAuthorizedError => e
-        handle_unauthorized(e)
-        true
-      #Occurs when no policy/check is defined the the specified action on resource
-      rescue Pundit::NotDefinedError => e
-        handle_unauthorized(e)
-        true
       end
       def to_html
         @resource = model.new

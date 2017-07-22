@@ -2,6 +2,18 @@ require './spec/restmachine/applications/base.rb'
 OrderSchema = Dry::Validation.Form(Restmachine::ApplicationSchema) do
   required(:items).filled(:array?)
 end
+UserSchema = Dry::Validation.Form(Restmachine::ApplicationSchema) do
+ required(:email).filled(:str?)
+ required(:username).filled(:str?)
+ required(:first_name).maybe(:str?)
+ required(:last_name).maybe(:str?)
+ required(:password).maybe(min_size?: 12).confirmation
+ required(:oauth_provider).maybe(:str?)
+
+# rule(password_or_oauth: [:password, :oauth_provider]) do |password, oauth_provider|
+#   oauth_provider || password
+# end
+end
 class OrderPolicy < Restmachine::ApplicationPolicy 
   def schema
     OrderSchema
@@ -24,9 +36,14 @@ module OrderController
     model.create! attributes
   end
 end
+class UserPolicy < Restmachine::ApplicationPolicy
+  def schema
+    UserSchema
+  end
+end
 class User
   include Mongoid::Document
-  field :name, type: String
+  field :username, type: String
   field :admin, type: Boolean
 
   def uri
@@ -41,13 +58,10 @@ class Order
   def uri
     id
   end
-  def admin?
-    true
-  end
 end
 module LoginController
   def login
-    user = User.find_by(name: params['name'])
+    user = User.find_by(username: params['username'])
     if user
       credentials = user.as_document
       credentials[:id] = user.id.to_s
@@ -71,6 +85,7 @@ SecureApp = Webmachine::Application.new do |app|
   app.routes do
     login authenticator, LoginController
     logout authenticator, LoginController
+    resource User, authenticator: authenticator
     resource Order, authenticator: authenticator, controller: OrderController
   end
 end

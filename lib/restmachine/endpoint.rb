@@ -36,9 +36,6 @@ module Restmachine
     def allow_cors
       false
     end
-    def allowed_methods
-      %w(POST GET PUT DELETE OPTIONS)
-    end
     def allowed_headers
       %w(DNT Keep-Alive User-Agent X-Requested-With If-Modified-Since Cache-Control Content-Type Content-Range Range)
     end
@@ -51,13 +48,13 @@ module Restmachine
     def generate_post_response 
       types = content_types_provided.map {|pair| pair.first }
       content_type = choose_media_type(types, request.accept || mime_extension_type)
-      if content_type
+      #if content_type
         handler = content_types_provided.find{|ct, _| content_type.type_matches?(Webmachine::MediaType.parse(ct)) }.last
         type = content_type.type
-      else
-        handler = content_types_provided.first.last
-        type = content_types_provided.first.first
-      end
+      #else
+      #  handler = content_types_provided.first.last
+      #  type = content_types_provided.first.first
+      #end
       response.headers['Content-Type'] = type
       response.body = send(handler)
       [content_type, send(handler)]
@@ -69,6 +66,17 @@ module Restmachine
       else
         true
       end
+    end
+    def forbidden?
+      if respond_to? :unauthorized?
+        send :unauthorized?
+      else
+        false
+      end
+    #Occurs when user access to perform specified action on resource explicitly fails
+    rescue Restmachine::XSRFValidityError, Pundit::NotDefinedError, Pundit::NotAuthorizedError => e
+      handle_unauthorized(e)
+      true
     end
     def default_format
       [["application/json", :to_json],
@@ -88,7 +96,7 @@ module Restmachine
       @content_types_accepted = [["application/json", :from_json],
        ["application/x-www-form-url-encoded", :from_form],
        ["multipart/form-data", :from_multipart],
-       ["*/*", :from_unknown]]
+       ['application/octet-stream', :from_unknown]]
     end
     def delete_resource
       raise Restmachine::XSRFValidityError.new("Could not confirm authenticity of request") unless xsrf_valid?
@@ -131,7 +139,8 @@ module Restmachine
       403
     end
     def from_form
-      @params = request.parse_nested_query(request.body.to_s)
+      @params = request.parse_nested_query(request.body.to_s) unless @parsed_params
+      puts @params
       @parsed_params = true
       raise Restmachine::XSRFValidityError.new("Could not confirm authenticity of request") unless xsrf_valid?
       handle_request if respond_to? :handle_request
@@ -145,24 +154,24 @@ module Restmachine
       403
     end
     def from_multipart
-      %r|\Amultipart/.*boundary=(?<boundary>.*)| =~ request.headers['Content-Type']
-      body = StringIO.new(request.body)
-      content_length = request.headers['Content-Length'].to_i
+      unless @parsed_params
+        %r|\Amultipart/.*boundary=(?<boundary>.*)| =~ request.headers['Content-Type']
+        body = StringIO.new(request.body)
+        content_length = request.headers['Content-Length'].to_i
 
-      tempfile = lambda { |filename, content_type| Tempfile.new(["RestmachineMultipart", ::File.extname(filename)]) }
-      bufsize = 16384
-      qp = Rack::QueryParser.make_default(65536, 100)
-      parser = Rack::Multipart::Parser.new(boundary, tempfile, bufsize, qp)
-      parser.on_read body.read(bufsize), body.eof?
-
-      loop do
-        break if parser.state == :DONE
+        tempfile = lambda { |filename, content_type| Tempfile.new(["RestmachineMultipart", ::File.extname(filename)]) }
+        bufsize = 16384
+        qp = Rack::QueryParser.make_default(65536, 100)
+        parser = Rack::Multipart::Parser.new(boundary, tempfile, bufsize, qp)
         parser.on_read body.read(bufsize), body.eof?
-      end
-      @params = parser.result.to_h[:params]
 
-      #@params = Rack::Multipart::Parser.new(boundary, body, content_length, {}, tempfile, bufsize).parse
-      @parsed_params = true
+        loop do
+          break if parser.state == :DONE
+          parser.on_read body.read(bufsize), body.eof?
+        end
+        @params = parser.result.to_h[:params]
+        @parsed_params = true
+      end
       raise Restmachine::XSRFValidityError.new("Could not confirm authenticity of request") unless xsrf_valid?
       handle_request if respond_to? :handle_request
     rescue EOFError => e
@@ -185,24 +194,24 @@ module Restmachine
       403
     end
     def options
+      opts = {}
       if allow_cors
-        {'Access-Control-Allow-Origin' => allowed_origins.join(","),
-         'Access-Control-Allow-Methods' => allowed_methods.join(","),
-         'Access-Control-Allow-Headers' => allowed_headers.join(","),
-         'Access-Control-Expose-Headers' => allowed_headers.join(","),
-         'Access-Control-Max-Age' => max_age}
-      else
-        {}
+        opts['Access-Control-Allow-Origin'] = allowed_origins.join(",")
+        opts['Access-Control-Allow-Methods'] = allowed_methods.join(",")
+        opts['Access-Control-Allow-Headers'] = allowed_headers.join(",")
+        opts['Access-Control-Expose-Headers'] = allowed_headers.join(",")
+        opts['Access-Control-Max-Age'] = max_age
       end
+      opts
     end
     def process_post
       content_type = Webmachine::MediaType.parse(request.content_type || 'application/octet-stream')
       acceptable = content_types_accepted.find {|ct, _| content_type.match?(ct) }
-      if acceptable
+      #if acceptable
         send(acceptable.last)
-      else
-        415
-      end
+      #else
+      #  415
+      #end
     end
     def handle_unauthorized e
       errors << e.message

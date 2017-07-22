@@ -9,16 +9,12 @@ module Restmachine
       def create_path
         @create_path ||= "#{path}/#{next_id}"
       end
-      def forbidden?
-        #Only need to do XSRF detection if this is a create. Otherwise it is a list via GET
+      def unauthorized?
         if post_is_create? and request.post?
           authorize(model, :create?)
         end
         #If we get here without throwing an exception, we can access the resource
         false
-      rescue Restmachine::XSRFValidityError, Pundit::NotAuthorizedError => e
-        handle_unauthorized(e)
-        true
       end
       def post_is_create?
         true

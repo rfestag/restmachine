@@ -16,6 +16,7 @@ module Restmachine
         @issuers = trusted_issuers
         if @secret.nil? and algorithm == 'none'
           @validate = false
+          @algorithm = algorithm
           return
         else
           @validate = true

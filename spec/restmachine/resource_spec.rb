@@ -121,7 +121,6 @@ describe Restmachine::Resource do
       protect_from_forgery
       body({id: 'bob'}.to_json)
       post "/people/#{person.id}/iaction"
-      puts response.inspect
       expect(response.code).to eq(200)
       expect(response.headers['Content-Type']).to eq('text/html')
     end

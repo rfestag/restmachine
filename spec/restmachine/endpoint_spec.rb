@@ -28,12 +28,59 @@ describe Restmachine::Endpoint do
       post '/people'
       expect(response.code).to eq(403)
     end
-    it 'should fail unauthorized when there is no double submit with the cookie' do
+    it 'should fail unauthorized when there is no double submit with the cookie for JSON' do
       header 'Accept', 'application/json'
       header 'Content-Type', 'application/json'
       cookie 'XSRF-TOKEN', 'FAKE_XSRF_TOKEN'
       body({name: 'name', age: 21}.to_json)
       post '/people'
+      expect(response.code).to eq(403)
+    end
+    it 'should fail unauthorized when there is no double submit with the cookie for form data' do
+      header 'Accept', 'application/json'
+      header 'Content-Type', 'application/x-www-form-url-encoded'
+      cookie 'XSRF-TOKEN', 'FAKE_XSRF_TOKEN'
+      body({name: 'name', age: 21}.to_query)
+      post '/people'
+      expect(response.code).to eq(403)
+    end
+    it 'should fail unauthorized when there is no double submit with the cookie for multipart data' do
+      header 'Accept', 'application/json'
+      header 'Content-Type', 'multipart/form-data; boundary=38516d25820c4a9aad05f1e42cb442f4'
+      data = %Q{--38516d25820c4a9aad05f1e42cb442f4\r
+Content-Disposition: form-data; name="file"; filename="page.pdf"\r
+Content-Type: application/pdf\r
+Content-Encoding: base64\r
+\r
+H4sICI0fXVQAA3BhZ2UucGRmAAvOz01VCE7MLchJVQhITE8FAAyOwbUQAAAA\r
+--38516d25820c4a9aad05f1e42cb442f4\r
+Content-Disposition: form-data; name="name"\r
+\r
+name\r
+--38516d25820c4a9aad05f1e42cb442f4\r
+Content-Disposition: form-data; name="age"\r
+\r
+21\r
+--38516d25820c4a9aad05f1e42cb442f4--}
+      header 'Content-Length', data.bytesize
+      cookie 'XSRF-TOKEN', 'FAKE_XSRF_TOKEN'
+      body(data)
+      post '/people'
+      expect(response.code).to eq(403)
+    end
+    it 'should fail unauthorized when there is no double submit with the cookie for unknown content type' do
+      header 'Accept', 'application/json'
+      cookie 'XSRF-TOKEN', 'FAKE_XSRF_TOKEN'
+      post '/people'
+      expect(response.code).to eq(403)
+    end
+    it 'should fail unauthorized when on DELETE when is no double submit with the cookie' do
+      person = Person.create({name: 'person1', age: 21})
+      header 'Accept', 'application/json'
+      header 'Content-Type', 'application/json'
+      cookie 'XSRF-TOKEN', 'FAKE_XSRF_TOKEN'
+      body({name: 'name', age: 21}.to_json)
+      delete "/people/#{person.id}"
       expect(response.code).to eq(403)
     end
     it 'should accept authenticity_token parameter' do
@@ -107,6 +154,15 @@ describe Restmachine::Endpoint do
       post '/people'
       expect(response.code).to eq(400)
     end
+    it 'should return 400 on bad form' do
+      #Create valid object
+      header 'Accept', 'application/json'
+      header 'Content-Type', 'application/x-www-form-url-encoded'
+      protect_from_forgery
+      body("x[y]=1&x[y]z=2")
+      post '/people'
+      expect(response.code).to eq(400)
+    end
     it 'should support Form Encoding' do
       #Create valid object
       header 'Accept', 'application/json'
@@ -131,7 +187,6 @@ describe Restmachine::Endpoint do
       id = location.split('/').last
       expect(Person.find(id).id.to_s).to eq(id)
     end
-
     it 'should support multi-part encoding' do
       header 'Accept', 'application/json'
       header 'Content-Type', 'multipart/form-data; boundary=38516d25820c4a9aad05f1e42cb442f4'
@@ -191,6 +246,16 @@ Content-Disposition: form-data; name="age"\r
       expect(response.code).to eq(200)
       expect(response.headers['Content-Type']).to eq('application/json')
       expect(response.body).to eq('[]')
+    end
+    it 'fails with 415 on POST that is not supported format' do
+      header 'Content-Type', 'application/somethingstupid'
+      post '/people'
+      expect(response.code).to eq(415)
+    end
+    it 'fails with 406 on POST requesting unsupported type' do
+      header 'Accept', 'application/somethingstupid'
+      post '/people'
+      expect(response.code).to eq(406)
     end
     it 'returns HTML' do
       get '/people.html'
