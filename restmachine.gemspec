@@ -38,7 +38,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "thor"
   spec.add_dependency "treetop"
   spec.add_dependency "uglifier"
-  spec.add_dependency "webmachine", "~> 1.4"
+  spec.add_dependency "webmachine", "~> 1.5"
   spec.add_dependency "webmachine-actionview", "~> 0.0"
   spec.add_dependency "yui-compressor"
   spec.add_dependency "bcrypt"
